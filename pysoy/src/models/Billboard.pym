@@ -1,0 +1,93 @@
+# PySoy's models.Billboard class
+#
+# Copyright (C) 2006,2007,2008,2009 PySoy Group
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program; if not, see http://www.gnu.org/licenses
+#
+# $Id: Billboard.pym 1393 2008-12-31 23:51:25Z ArcRiley $
+
+cdef class Billboard (Model) :
+  '''soy.models.Billboard
+  
+    This :class:`~soy.model.Model` renders a :class:`~soy.materials.Material` 
+    which always faces the :class:`~soy.bodies.Camera` viewing it.
+
+    @type  material : soy.materials.Material
+    @param material : Material to be used
+    @type  size     : tuple
+    @param size     : Initial size of the Billboard
+  '''
+
+
+  def __cinit__(self, material, size=(1,1), *args, **kwargs):
+    self._material = material
+    self._size[0]  = size[0]
+    self._size[1]  = size[1]
+
+
+  ############################################################################
+  #
+  # Properties
+  #
+
+  property size:
+    '''Billboard.size
+
+    Specify the size of Billboard in horizontal and vertical direction
+    '''
+    def __get__(self):
+      return (self._size[0], self._size[1])
+
+    def __set__(self, newsize):
+      self._size[0] = newsize[0]
+      self._size[1] = newsize[1]
+
+
+  ############################################################################
+  #
+  # WindowLoop Functions
+  #
+
+  cdef void _render(self, soy.bodies.Body _body) :
+    cdef float _mmat[16]
+    #    
+    self._material._coreBind()
+    gl.glPushMatrix()
+    gl.glDisable(gl.GL_LIGHTING)
+    #
+    gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX, _mmat)
+    #UP = (_mmat[0], _mmat[4], _mmat[8])
+    #RIGHT = (_mmat[1], _mmat[5], _mmat[9])
+    #
+    gl.glBegin(gl.GL_QUADS)
+    gl.glTexCoord2f(1.0, 0.0)
+    gl.glVertex3f( ( _mmat[0] * self._size[0] - _mmat[1] * self._size[1]) ,
+                   ( _mmat[4] * self._size[0] - _mmat[5] * self._size[1]),
+                   ( _mmat[8] * self._size[0] - _mmat[9] * self._size[1]))
+    gl.glTexCoord2f(1.0, 1.0)
+    gl.glVertex3f( ( _mmat[0] * self._size[0] + _mmat[1] * self._size[1]) ,
+                   ( _mmat[4] * self._size[0] + _mmat[5] * self._size[1]),
+                   ( _mmat[8] * self._size[0] + _mmat[9] * self._size[1]))
+    gl.glTexCoord2f(0.0, 1.0)
+    gl.glVertex3f( (-_mmat[0] * self._size[0] + _mmat[1] * self._size[1]) ,
+                   (-_mmat[4] * self._size[0] + _mmat[5] * self._size[1]),
+                   (-_mmat[8] * self._size[0] + _mmat[9] * self._size[1]))
+    gl.glTexCoord2f(0.0, 0.0)
+    gl.glVertex3f( (-_mmat[0] * self._size[0] - _mmat[1] * self._size[1]) ,
+                   (-_mmat[4] * self._size[0] - _mmat[5] * self._size[1]),
+                   (-_mmat[8] * self._size[0] - _mmat[9] * self._size[1]))
+    gl.glEnd()
+    gl.glEnable(gl.GL_LIGHTING)
+    gl.glPopMatrix()
+    self._material._coreUnBind()

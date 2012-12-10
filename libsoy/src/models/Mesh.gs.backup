@@ -1,0 +1,315 @@
+/*
+ *  libsoy - soy.models.Mesh
+ *  Copyright (C) 2006,2007,2008,2009,2010,2011,2012 Copyleft Games Group
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program; if not, see http://www.gnu.org/licenses
+ *
+ */
+
+[indent=4]
+uses
+    GL
+
+struct soy.models._face
+    m : ushort  // material index
+    a : ushort  // vertex A
+    b : ushort  // vertex B
+    c : ushort  // vertex C
+
+
+class soy.models.Mesh : soy.models.Model
+    renderLock : GLib.StaticRWLock
+    _materials : list of soy.materials.Material
+    _matgroups : list of ushort
+    _face_objs : dict of int, weak soy.atoms.Face?
+    _vert_objs : dict of int, weak soy.atoms.Vertex?
+    _faces : array of _face
+    _verts : float*                     // px py pz nx ny nz tx ty tz ux uy uz
+    _updated : bool
+    _glEBO : GLuint                     // Element Buffer Object ID
+    _glVBO : GLuint                     // Vertex Buffer Object ID
+
+
+    init
+        // This is to ensure the VBOs and materials don't change while a Mesh
+        // is being rendered, but allow reading values while being rendered.
+        renderLock = GLib.StaticRWLock()
+        _mutex = new Mutex()
+
+        // _materials and _matgroups store the materials used by faces within
+        // the Mesh and how many faces use each material so the render function
+        // knows how many faces to render before switching to the next Material
+        //
+        // We don't use a list of a struct for this because Genie has poor
+        // support for using a struct with generics currently.  In the future
+        // this could be cleaned up somewhat, but is fine for now.
+        //
+        // These lists should always be the same size.
+        _materials = new list of soy.materials.Material
+        _matgroups = new list of ushort
+
+        // These hold weak references for every Face and Vertex object we've
+        // created, mapped by its index offset, such that if the user requests
+        // the same index twice we'll return the same object they already have
+        // instead of creating a new one.
+        _face_objs = new dict of int, weak soy.atoms.Face?
+        _vert_objs = new dict of int, weak soy.atoms.Vertex?
+
+        // _faces and _verts are our public API storage of faces and vertices.
+        // These are initialized to zero length and replaced by new arrays
+        // whenever a change happens.  This inefficient process is tolerable
+        // since changes are not expected to happen very often.
+        _faces = new array of _face[0]
+        _verts = new array of float[0]
+
+        // Set EBO (Element Buffer Object) and VBO (Vertex Buffer Object) to
+        // zero so the render thread knows they're both uninitialized.
+        // These will be initialized the first time they're needed.
+        _glEBO = 0
+        _glVBO = 0
+
+        // refers to the rendering pipeline OpenGL will use - we use these values to
+        // determine the offsets we will use to maintain public ordering for the API
+        _bytes = 1
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // Methods
+
+    def new get (index : int) : soy.atoms.Face?
+        ret : soy.atoms.Face? = null
+
+        //determine if index is out of bounds
+        if index < 0 or index >= self._length
+            return null
+
+        if self._face_objs.has_key(index)
+            ret = _face_objs[index]
+
+        else
+            verts : list of soy.atoms.Vertex = new list of soy.atoms.Vertex
+            v : soy.atoms.Vertex
+            //each vertex occupies 12 indices and there are 3 vertices per face
+            var vert_index = index * 3
+            var offset = index * 36
+            for var i = 0 to 2
+                vert_index += i
+                if self._vert_objs.has_key(vert_index)
+                    v = self._vert_objs[vert_index]
+
+                else
+                    pos : soy.atoms.Position
+                    norm : soy.atoms.Vector
+                    tex : soy.atoms.Position
+                    tan : soy.atoms.Vector
+
+                    pos = new soy.atoms.Position(
+                        (float) ((GLfloat*) self._verts)[offset],
+                        (float) ((GLfloat*) self._verts)[offset+1],
+                        (float) ((GLfloat*) self._verts)[offset+2]
+                    )
+                    norm = new soy.atoms.Vector(
+                        (float) ((GLfloat*) self._verts)[offset+3],
+                        (float) ((GLfloat*) self._verts)[offset+4],
+                        (float) ((GLfloat*) self._verts)[offset+5]
+                    )
+                    tex = new soy.atoms.Position(
+                        (float) ((GLfloat*) self._verts)[offset+6],
+                        (float) ((GLfloat*) self._verts)[offset+7],
+                        (float) ((GLfloat*) self._verts)[offset+8]
+                    )
+                    tan = new soy.atoms.Vector(
+                        (float) ((GLfloat*) self._verts)[offset+9],
+                        (float) ((GLfloat*) self._verts)[offset+10],
+                        (float) ((GLfloat*) self._verts)[offset+11]
+                    )
+                    v = new soy.atoms.Vertex(pos,norm,tex,tan)
+                v.weak_ref(self._vert_weak)
+                self._vert_objs[vert_index] = v
+
+                verts.add(v)
+
+                //move offset to location of the next vertex
+                offset += 12
+                vert_index += 1
+
+            //TODO - get material - this of course means we will have to a _faces registry that works similar to _verts
+            ret = new soy.atoms.Face(verts[0],verts[1],verts[2])
+
+        ret.on_set.connect(self._face_set)
+        ret.weak_ref(self._face_weak)
+
+        self._face_objs[index] = ret
+        return #ret
+
+
+    def new set (index : int, value : Object)
+        face : soy.atoms.Face
+
+        if not (value isa soy.atoms.Face)
+            return
+
+        face = (soy.atoms.Face) value
+
+        if self._face_objs.has_key(index)
+            var old = self._face_objs[index]
+            // remove face's verts from the weak reference list
+            self._vert_weak(old.get(1))
+            self._vert_weak(old.get(2))
+            self._vert_weak(old.get(3))
+            old.on_set.disconnect(self._face_set)
+            old.weak_unref(self._face_weak)
+
+        self._face_objs[index] = face
+
+        //TODO - update materials
+        self._update_verts(index, face)
+
+        face.on_set.connect(self._face_set)
+        face.weak_ref(self._face_weak)
+
+        self._mutex.lock()
+        self._updated = true
+        self._mutex.unlock()
+
+
+    def _face_weak(face : Object)
+        // doing garbage collection
+        // will also have to check for unused vertices so we can garbage collect them as well
+        var garbage = new list of int
+        for index in self._face_objs.keys
+            if self._face_objs[index] is face
+                // add the face to be garbage collected
+                garbage.add(index)
+        for index in garbage
+            self._face_objs.unset(index)
+
+    def _vert_weak(vert : Object)
+        //garbage collection for vertex
+        var garbage = new list of int
+        for index in self._vert_objs.keys
+            if self._vert_objs[index] is vert
+                //add the vertex to be garbage collected
+                garbage.add(index)
+        for index in garbage
+            self._vert_objs.unset(index)
+
+    //update the correct vertices based on the byte mapping
+    def _update_verts(index : int, face : soy.atoms.Face)
+
+        //each vertex occupies 12 indices and there are 3 vertices per face
+        var vert_index = index * 3
+        var offset = index * 36
+
+        verts : GLfloat* = (GLfloat*) self._verts
+        for var i = 1 to 3
+            // save the weak reference to _vert_objs
+            if self._vert_objs.has_key(vert_index)
+                // deference whatever vert is already there
+                var old = self._vert_objs[vert_index]
+                old.weak_unref(self._vert_weak)
+            self._vert_objs[vert_index] = face.get(i)
+            self._vert_objs[vert_index].weak_ref(self._vert_weak)
+            verts[offset]   = (GLfloat) face.get(i).position.x
+            verts[offset+1] = (GLfloat) face.get(i).position.y
+            verts[offset+2] = (GLfloat) face.get(i).position.z
+            verts[offset+3] = (GLfloat) face.get(i).normal.x
+            verts[offset+4] = (GLfloat) face.get(i).normal.y
+            verts[offset+5] = (GLfloat) face.get(i).normal.z
+            verts[offset+6] = (GLfloat) face.get(i).texcoord.x
+            verts[offset+7] = (GLfloat) face.get(i).texcoord.y
+            verts[offset+8] = (GLfloat) face.get(i).texcoord.z
+            verts[offset+9] = (GLfloat) face.get(i).tangent.x
+            verts[offset+10]= (GLfloat) face.get(i).tangent.y
+            verts[offset+11]= (GLfloat) face.get(i).tangent.z
+            offset += 12
+            vert_index += 1
+
+    def _face_set(face : soy.atoms.Face)
+        for index in self._face_objs.keys
+            if self._face_objs[index] is face
+                //TODO - update materials
+                self._update_verts(index, face)
+
+        self._mutex.lock()
+        self._updated = true
+        self._mutex.unlock()
+
+    def _resize(bytes : int, length : int)
+        buffer_size : ulong
+
+        self._mutex.lock()
+
+        // 12 indices per vertex and 3 vertices per face = 36 indices per face
+        // bytes refers to the number of bytes used by the GL datatype we are set to use
+        buffer_size = bytes * length * 36
+
+        if buffer_size is 0
+            if self._length is not 0
+                free(self._verts)
+                self._verts = null
+        else
+            if self._length is not 0
+                if self._length * self._bytes * 36 != buffer_size
+                    self._verts = realloc(self._verts,buffer_size)
+            else
+                // allocate a buffer to contain vertices
+                self._verts = malloc0(buffer_size)
+
+        self._bytes = bytes
+        self._length = (GLsizei) length
+        self._updated = true
+        self._mutex.unlock()
+
+
+    def override render ( body : soy.bodies.Body )
+        return
+
+    ////////////////////////////////////////////////////////////////////////
+    // Sequence Methods
+
+    def new get (index : int) : soy.atoms.Face?
+        ret : soy.atoms.Face? = null
+
+        // Return null if requested index is out of bounds
+        if index < 0 or index >= _faces.length
+            return null
+
+        // Return existing Face object if there is one
+        if _face_objs.has_key(index)
+            ret = _face_objs[index]
+
+        else
+            // For each vertex, check to see if we already have a Vertex
+            // object for it to use, otherwise create a new one.  The new
+            // Face object will receive a reference to these objects.
+            va : soy.atoms.Vertex?
+            vb : soy.atoms.Vertex?
+            vc : soy.atoms.Vertex?
+
+            // Vertex A
+            if _vert_objs.has_key(_faces[index].va)
+                va = _vert_objs[_faces[index].va]
+            else
+                va = new soy.atoms.Vertex(
+
+            ret = new soy.atoms.Face(_faces[index].mi, va, vb, vc)
+
+        // Set event callbacks
+        ret.on_set.connect(self._face_set)
+        ret.weak_ref(self._face_weak)
+
+        // Store weak reference and return owned Color object
+        self._face_objs[index] = ret
+        return #ret

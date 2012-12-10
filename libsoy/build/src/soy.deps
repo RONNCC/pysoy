@@ -1,0 +1,13 @@
+config
+gles-1.1
+gee-1.0
+cairo
+gdk-2.0
+librsvg-2.0
+ode-0.11
+posix
+bluez
+loudmouth-1.0
+nice
+libusb
+dbus-glib-1

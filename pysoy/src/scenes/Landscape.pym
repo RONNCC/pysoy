@@ -1,0 +1,462 @@
+# PySoy's soy.scenes.Landscape
+#
+# Copyright (C) 2006,2007,2008,2009 PySoy Group
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program; if not, see http://www.gnu.org/licenses
+#
+# $Id: Landscape.pym 1393 2008-12-31 23:51:25Z ArcRiley $
+cimport stdlib
+cdef class Landscape (Scene) :
+  ''' Landscape Scene
+
+    This is a :class:`~soy.scenes.Scene` based on a heightmap.
+    Accepts a heightmap with the detail of it, the width, depth, and height, and
+    the position in the form of a dict (x, y, z)
+  '''
+
+  ############################################################################
+  #
+  # Python functions
+  #
+
+  def __cinit__(self, 
+                soy.textures.Texture heightmap,
+                soy.materials.Material mat,
+                detail = 1, width=1024, depth=1024, height=16, 
+                position=(0, 0, 0), 
+                *args, **kw) :
+    assert isinstance(heightmap, soy.textures.Texture) or heightmap._chans == 1, \
+      "Heightmap must be of type soy.textures.Texture and 1 channel"
+    assert type(position[0]) == int or type(position[1]) == int or \
+      type(position[2]) == int, "The heightmap position must be an int"
+    self._width  = width
+    self._height = height
+    self._depth  = depth
+    self.position = position
+    self._pyMap = heightmap
+    self._material = mat
+    self._vertArray = NULL
+    self._faceArray = NULL
+    self._vertBuffer = 0
+    self._faceBuffer = 0
+    self._createArrays()
+    stdio.printf("EO-cinit\n");
+    
+  def __dealloc__(self) :
+    ode.dGeomHeightfieldDataDestroy(self._heightfieldDataID)
+    if self._vertArray != NULL :
+      py.PyMem_Free(self._vertArray)
+    if self._faceArray != NULL :
+      py.PyMem_Free(self._faceArray)
+    if self._vertBuffer != 0 :
+      gl.glDeleteBuffersARB(1, &self._vertBuffer)
+    if self._faceBuffer != 0 :
+      gl.glDeleteBuffersARB(1, &self._faceBuffer)
+
+
+  ############################################################################
+  #
+  # Properties
+  #
+
+  property position :
+    '''Landscape's Position
+    '''
+    def __get__(self) :
+      return (self._position[0], self._position[1], self._position[2])
+    def __set__(self, value) :
+      assert type(value) == tuple or type(value) == list, \
+        "Must provide a tuple or list for landscape position!"
+      assert len(value) == 3, "Must provide (x,y,z)"
+      self._position[0] = value[0]
+      self._position[1] = value[1]
+      self._position[2] = value[2]
+
+  ############################################################################
+  #
+  # General C functions
+  #
+
+  cdef void _createArrays(self) :
+    cdef int _i, _j, _l, _offset
+    cdef int _a, _b, _c, _d
+    cdef float *_deltaCols, *_deltaRows
+    cdef float _maxDelta, _minDelta
+    cdef double _v1[3], _v2[3], _normal[3], _normal2[3], _length, _u[3]
+    self._heightfieldDataID = ode.dGeomHeightfieldDataCreate()
+    #
+    # Free old arrays when needed
+    py.PyMem_Free(self._vertArray)
+    py.PyMem_Free(self._faceArray)
+    #
+    # Alloc new arrays
+    self._vertArray = <Vert *> py.PyMem_Malloc(16 * 4 * 
+                                               (self._pyMap._width  + 1)*
+                                               (self._pyMap._height + 1))
+    self._faceArray = <Quad *> py.PyMem_Malloc(sizeof(Quad) *
+                                               (self._pyMap._width) *
+                                               (self._pyMap._height))
+    ode.dGeomHeightfieldDataBuildByte(self._heightfieldDataID,
+                                      <unsigned char*> self._pyMap._texels,
+                                      0,                             # copy?
+                                      self._width,                   # width
+                                      self._depth,                   # depth
+                                      self._pyMap._width,            # dataX
+                                      self._pyMap._height,           # dataY
+                                      1.0 / 255.0 * self._height,    # scale
+                                      0,                             # offset
+                                      4.0,                           # thick
+                                      0)                             # wrapped
+    self._geomID = ode.dCreateHeightfield(self._spaceID, 
+                                          self._heightfieldDataID, 1)
+    ode.dGeomSetPosition(self._geomID, self._position[0],
+                         self._position[1], self._position[2])
+    #
+    # Alloc _delta arrays
+    #
+    #   These are arrays for column and row edge deltas:
+    #     . . . . . . . .    ._._._._._._._.
+    #     | | | | | | | | < delta
+    #     . . . . . . . .    ._._._._._._._.
+    #     | | | | | | | |         ^delta
+    #     . . . . . . . .    ._._._._._._._.
+    #       _deltaCols         _deltaRows
+    #
+    #   They're used in determining edge collapses in LOD generation below.
+    #
+    _deltaCols = <float*> py.PyMem_Malloc(sizeof(float) *
+                                          (self._pyMap._width + 1) *
+                                          (self._pyMap._height + 1))
+    _deltaRows = <float*> py.PyMem_Malloc(sizeof(float) *
+                                          (self._pyMap._width + 1) *
+                                          (self._pyMap._height + 1))
+    #
+    # Calculate positions and texcoords first
+    for _i from 0 <= _i < self._pyMap._height :
+      for _j from 0 <= _j < self._pyMap._width :
+        _l = (self._pyMap._width + 1) * _i + _j
+        self._vertArray[_l].px = <float> _j / self._pyMap._width * self._width
+        self._vertArray[_l].py = self._pyMap._texels[_l] \
+                                      / 255.0 * self._height
+        self._vertArray[_l].pz = <float> _i /self._pyMap._height * self._depth 
+        #all below need to be calculated CORRECTLY!
+        self._vertArray[_l].tx = _j                         # * texture scale
+        self._vertArray[_l].ty = _i                         # * texture scale
+        self._vertArray[_l].tz = self._pyMap._texels[_l] / 255.0
+    #
+    # The right tiling edge (currently just 0)
+    for _i from 0 <= _i < self._pyMap._height :
+      _l = (self._pyMap._width + 1) * _i + self._pyMap._width
+      self._vertArray[_l].px = <float> self._width
+      self._vertArray[_l].py = 0.0
+      self._vertArray[_l].pz = <float> _i / self._pyMap._height * self._depth 
+      self._vertArray[_l].tx = self._pyMap._width + 1       # * texture scale
+      self._vertArray[_l].ty = <float> _i                   # * texture scale
+      self._vertArray[_l].tz = 0.0
+    #
+    # The bottom tiling edge (currently just 0)
+    for _i from 0 <= _i < self._pyMap._width :
+      _l = (self._pyMap._width + 1) * self._pyMap._height + _i
+      self._vertArray[_l].px = <float> _i / self._pyMap._width * self._width
+      self._vertArray[_l].py = 0.0
+      self._vertArray[_l].pz = <float> self._depth
+      self._vertArray[_l].tx = <float> _i                   # * texture scale
+      self._vertArray[_l].ty = self._pyMap._height + 1      # * texture scale
+      self._vertArray[_l].tz = 0.0
+    #
+    # bottom-right tiling corner (currently 0)
+    _l = (self._pyMap._width + 1) * (self._pyMap._height + 1)
+    self._vertArray[_l].px = <float> self._width
+    self._vertArray[_l].py = 0.0
+    self._vertArray[_l].pz = <float> self._height
+    self._vertArray[_l].tx = self._pyMap._width + 1       # * texture scale
+    self._vertArray[_l].ty = self._pyMap._height + 1      # * texture scale
+    self._vertArray[_l].tz = 0.0
+    #
+    # Normals and tangents calculated second because they depend on position
+    for _i from 0 <= _i <= self._pyMap._height :
+      for _j from 0 <= _j <= self._pyMap._width :
+        _normal[0] = 0
+        _normal[1] = 0
+        _normal[2] = 0
+        _normal2[0] = 0
+        _normal2[1] = 0
+        _normal2[2] = 0
+        _offset = self._pyMap._width * _i + _j
+        # 
+        # for code cleanlyness, get the four verticies first as:
+        # 
+        # c-b   c = current vert
+        # |\|   vector1 (b) = cb 
+        # a     vector2 (a) = ca
+        # 
+        _a = _offset+self._pyMap._width
+        _b = _offset+1
+        _c = _offset
+        #
+        # check if we are at either of two sides which only have 3 verts to calc
+        if _j+1 != self._pyMap._width and _i+1 != self._pyMap._height :
+          # subtract the vertices to get vectors
+          _v1[0] = self._vertArray[_c].px-self._vertArray[_b].px
+          _v2[0] = self._vertArray[_c].px-self._vertArray[_a].px
+          _v1[1] = self._vertArray[_c].py-self._vertArray[_b].py
+          _v2[1] = self._vertArray[_c].py-self._vertArray[_a].py
+          _v1[2] = self._vertArray[_c].pz-self._vertArray[_b].pz
+          _v2[2] = self._vertArray[_c].pz-self._vertArray[_a].pz
+          
+          # While we are in this loop, calculate the delta map for LOD
+          _deltaRows[_offset] = self._vertArray[_offset].py-self._vertArray[_offset+1].py
+          #stdio.printf("%d : %f\n", _offset, _deltaRows[_offset]);
+        else :
+          # subtract the vertices to get vectors
+          _v1[0] = self._vertArray[_c].px
+          _v2[0] = self._vertArray[_c].px-self._vertArray[_a].px
+          _v1[1] = self._vertArray[_c].py
+          _v2[1] = self._vertArray[_c].py-self._vertArray[_a].py
+          _v1[2] = self._vertArray[_c].pz
+          _v2[2] = self._vertArray[_c].pz-self._vertArray[_a].pz
+        # perform cross products on the two vectors
+        _normal[0] = _v1[1]*_v2[2]-_v1[2]*_v2[1] #Calculate the x component of the normal
+        _normal[1] = _v1[2]*_v2[0]-_v1[0]*_v2[2] #Calculate the y component of the normal
+        _normal[2] = _v1[0]*_v2[1]-_v1[1]*_v2[0] #Calculate the z component of the normal
+        
+        #   a 
+        # |\|   vector1 (b) = cb 
+        # b c   vector2 (a) = ca
+        # 
+        _a = _offset-self._pyMap._width
+        _b = _offset-1
+        _c = _offset
+        # subtract the vertices to get vectors
+        if _j != 0 and _i != 0 :
+          _v1[0] = self._vertArray[_b].px-self._vertArray[_c].px
+          _v2[0] = self._vertArray[_a].px-self._vertArray[_c].px
+          _v1[1] = self._vertArray[_b].py-self._vertArray[_c].py
+          _v2[1] = self._vertArray[_a].py-self._vertArray[_c].py
+          _v1[2] = self._vertArray[_b].pz-self._vertArray[_c].pz
+          _v2[2] = self._vertArray[_a].pz-self._vertArray[_c].pz
+        else:
+          _v1[0] = self._vertArray[_c].px
+          _v2[0] = self._vertArray[_a].px-self._vertArray[_c].px
+          _v1[1] = self._vertArray[_c].py
+          _v2[1] = self._vertArray[_a].py-self._vertArray[_c].py
+          _v1[2] = self._vertArray[_c].pz
+          _v2[2] = self._vertArray[_a].pz-self._vertArray[_c].pz
+        # perform cross products on the two vectors
+        _normal2[0] = _v1[1]*_v2[2]-_v1[2]*_v2[1] #Calculate the x component of the normal
+        _normal2[1] = _v1[2]*_v2[0]-_v1[0]*_v2[2] #Calculate the y component of the normal
+        _normal2[2] = _v1[0]*_v2[1]-_v1[1]*_v2[0] #Calculate the z component of the normal
+        
+        # last thing of all, average the two together and set them as the normals!
+        if _normal[0] == 0 and _normal[1] == 0 and _normal[2] == 0 :
+          _normal[0] = _normal2[0]
+          _normal[1] = _normal2[1]
+          _normal[2] = _normal2[2]
+        elif _normal2[0] != 0 and _normal2[1] != 0 and _normal2[2] != 0 :
+          _normal[0] += _normal2[0]
+          _normal[1] += _normal2[1]
+          _normal[2] += _normal2[2]
+          _normal[0] /= 2
+          _normal[1] /= 2
+          _normal[2] /= 2
+        _length = math.sqrt(_normal[0] *
+                            _normal[0] + _normal[1] *
+                            _normal[1] + _normal[2] *
+                            _normal[2])
+        _normal[0] /= _length
+        _normal[1] /= _length
+        _normal[2] /= _length
+        #stdio.printf("vert %d {nx: %f, ny: %f, nz: %f}\n", _offset, _normal[0], _normal[1], _normal[2]);
+        self._vertArray[_offset].nx = -(_normal[0])
+        self._vertArray[_offset].ny = (_normal[1])
+        self._vertArray[_offset].nz = (_normal[2])
+        # q = 90 degrees in the x direction
+        # uy' = y*cos q - z*sin q
+        # uz' = y*sin q + z*cos q
+        # ux' = x
+        #Rotate the whole normal, returns tangent
+        
+        _u[0] = self._vertArray[_offset].nx
+        _u[1] = (_normal[1]-self._vertArray[_offset].py) * stdlib.cosf(90) - (_normal[2]-self._vertArray[_offset].pz) * stdlib.sinf(90) + self._vertArray[_offset].py
+        _u[2] = (_normal[1]-self._vertArray[_offset].py) * stdlib.cosf(90) + (_normal[2]-self._vertArray[_offset].pz) * stdlib.sinf(90) + self._vertArray[_offset].pz
+        self._vertArray[_offset].ux = _u[0]
+        self._vertArray[_offset].uy = _u[1]
+        self._vertArray[_offset].uz = _u[2]
+    #     
+    # set up the face array to make all of the quads
+    _l = 0
+    # loop through all of the quads in the grid
+    for _i from 0 <= _i < self._pyMap._height :
+      for _j from 0 <= _j < self._pyMap._width :
+        # 
+        # CCW winding order:
+        #   a--d
+        #   |  |
+        #   b--c
+        # 
+        self._faceArray[_l].a = _j + ( _i    * (self._pyMap._width+1))
+        self._faceArray[_l].b = _j + ((_i+1) * (self._pyMap._width+1))
+        self._faceArray[_l].c = _j + ((_i+1) * (self._pyMap._width+1)) + 1
+        self._faceArray[_l].d = _j + ( _i    * (self._pyMap._width+1)) + 1
+        _l += 1
+    #
+    # Set a starting value for _maxDelta and _minDelta so it isn't blank
+    _maxDelta = _deltaRows[0]
+    _minDelta = _deltaRows[0]
+    #
+    # Loop through _deltaRows to figure out what can be merged
+    for _i from 0 <= _i < (self._pyMap._width + 1) * (self._pyMap._height + 1) :
+      if _deltaRows[_i] > _maxDelta :
+        _maxDelta = _deltaRows[_i]
+      if _deltaRows[_i] < _minDelta :
+        _minDelta = _deltaRows[_i]
+    
+    stdio.printf("_maxDelta: %f, _minDelta: %f\n", _maxDelta, _minDelta)
+    #
+    # Free previously alloc'ed delta arrays
+    py.PyMem_Free(_deltaCols)
+    py.PyMem_Free(_deltaRows)
+
+
+  cdef void _createBuffer(self) :
+    gl.glGenBuffersARB(1, <gl.GLuint*> &self._vertBuffer) # Create the vertex buffers
+    gl.glBindBufferARB(gl.GL_ARRAY_BUFFER_ARB, <gl.GLuint> self._vertBuffer)
+    gl.glBufferDataARB(gl.GL_ARRAY_BUFFER_ARB,
+                       sizeof(Vert) * 
+                       (self._pyMap._width+1) * (self._pyMap._height+1), 
+                       self._vertArray,
+                       gl.GL_STATIC_DRAW_ARB)
+    gl.glGenBuffersARB(1, &self._faceBuffer)
+    #
+    # Create the face buffer
+    gl.glBindBufferARB(gl.GL_ELEMENT_ARRAY_BUFFER_ARB, self._faceBuffer)
+    gl.glBufferDataARB(gl.GL_ELEMENT_ARRAY_BUFFER_ARB, 
+                 sizeof(Quad)*(self._pyMap._width)*(self._pyMap._height), 
+                 self._faceArray, gl.GL_STATIC_DRAW_ARB)
+
+
+  cdef void _render(self, gl.GLdouble _fovy,  gl.GLdouble _aspect,
+                          gl.GLdouble _znear, gl.GLdouble _zfar) :
+    #
+    # Setup projection matrix
+    cdef gl.GLfloat _fogColor[4]
+    _fogColor[0] = .5
+    _fogColor[1] = .5
+    _fogColor[2] = .5
+    _fogColor[3] = 1.0
+    cdef int _i, _pass
+    _pass = 0
+    gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    gl.gluPerspective(_fovy, _aspect, _znear, 1000.0)
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+    gl.glEnable(gl.GL_DEPTH_TEST)
+    gl.glEnable(gl.GL_LIGHTING)
+    gl.glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT, self._ambient._rgba)
+    #
+    # Turn on each light, keep it's iteration locked against mod until done
+    self._lights._iterStart()
+    for _i from 0 <= _i < self._lights._current :
+      # This is a quick hack (gl.GL_LIGHT0 + _i)
+      (<soy.bodies.Light> self._lights._list[_i])._on(gl.GL_LIGHT0 + _i)
+    gl.glPushMatrix()
+    gl.glTranslatef(self._position[0], self._position[1], self._position[2])
+    if self._vertBuffer :
+      py.PyMem_Free(self._faceArray)
+      py.PyMem_Free(self._vertArray)
+      self._faceArray = NULL # Make the pointer NULL so UB doesn't occur in free()
+      self._vertArray = NULL
+      gl.glBindBufferARB(gl.GL_ARRAY_BUFFER_ARB, <gl.GLuint> self._vertBuffer) # Bind to buffer for rendering below
+      gl.glBindBufferARB(gl.GL_ELEMENT_ARRAY_BUFFER_ARB, self._faceBuffer) 
+    else:
+      self._createBuffer()
+    gl.glVertexPointer  (3,  gl.GL_FLOAT, sizeof(Vert),(<char *>NULL + (0))) #px py pz
+    gl.glNormalPointer  (    gl.GL_FLOAT, sizeof(Vert),(<char *>NULL + (12)))  # nx ny nz
+    gl.glTexCoordPointer(3, gl.GL_FLOAT, sizeof(Vert),  (<char *> NULL + (24))) # tx ty tz
+    while self._material._render(_pass, <float*> 24, <float*> 0) :
+      gl.glDrawElements(gl.GL_QUADS, 
+                        self._pyMap._width * self._pyMap._height * 4,
+                        gl.GL_UNSIGNED_INT,
+                        <Quad*> 0)
+      _pass+=1
+    gl.glBindBufferARB(gl.GL_ARRAY_BUFFER_ARB, 0)
+    #
+    # Render the rest of the scene normally    
+    gl.glPopMatrix()
+    gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    gl.gluPerspective(_fovy, _aspect, _znear, _zfar)
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    #
+    # Iterate over bodies
+    self._bodies._iterStart()
+    for _i from 0 <= _i < self._bodies._current :
+      if (<soy.bodies.Body> self._bodies._list[_i])._model is not None :
+        (<soy.models.Model>
+         (<soy.bodies.Body> self._bodies._list[_i])._model)._render(
+         (<soy.bodies.Body> self._bodies._list[_i]))
+    self._bodies._iterDone()
+    if self._fogDensity > 0 : # This should be at the top really
+      #
+      # Turn on some fog!
+      gl.glClearColor(0.5,0.5,0.5,1.0)  # We'll Clear To The Color Of The Fog ( Modified )
+      gl.glEnable(gl.GL_FOG)                    #Enables GL_FOG
+      gl.glFogi(gl.GL_FOG_MODE, gl.GL_EXP2)     #Fog Mode
+      gl.glFogfv(gl.GL_FOG_COLOR, _fogColor)    #Set Fog Color
+      gl.glFogf(gl.GL_FOG_DENSITY, self._fogDensity/10)        #How Dense Will The Fog Be
+      gl.glHint(gl.GL_FOG_HINT, gl.GL_NICEST)   #Fog Hint Value
+      gl.glFogf(gl.GL_FOG_START, 1.0)           #Fog Start Depth
+      gl.glFogf(gl.GL_FOG_END, 50.0)             #Fog End Depth    
+    #
+    # Remember - turn off the lights before you leave
+    for _i from 0 <= _i < self._lights._current :
+      # This is a quick hack (gl.GL_LIGHT0 + _i)
+      (<soy.bodies.Light> self._lights._list[_i])._off(gl.GL_LIGHT0 + _i)
+    self._lights._iterDone()
+    gl.glDisable(gl.GL_LIGHTING)
+    gl.glDisable(gl.GL_DEPTH_TEST)
+
+
+"""
+
+TODO : LOD
+- First Get it to render        | Done!
+- Divide data in to sectors     |
+- get Sectors middle point      |
+- Relative to the sector distance to camera, calculate LOD value
+- Apply LOD algo using value
+  -elementsArray has to be reduced using LOD value
+  -verticies will still be in VRAM, but we're not gonna draw them, so its still optimized.
+  Texture Mipmaps..
+IRC excerpt, LOD algo basis
+yea
+ the size of the number of triangles times three 
+its one big block to you since a landscape will have *one* material
+ Z texcoord can be used to change the terrain type (3d texture)
+this means that you can use the face array for LOD more easily(elementsArray.. after this i get confused) 
+ see basically you can "shift up" the array, adding one to both the offset and length, such that the "base" 
+ face array is the lowest resolution and each time you shift up one it removes one triangle and replaces it with two
+ is, if your array has four triangles in the low resolution, ABCD
+ and the second step is A split = EF, B=GH, C=IJ, D=KL, then it's arranged as:
+ ABCDEFGHIJKL
+if you're rendering the whole thing as step 1, then its offset 0 length 4 (ABCD)
+ if you want 50% of step2 then its offset 2, length 6, = CDEFGH
+ and then it's a matter of grouping these into geographic boundaries such that depending on 
+ where your camera is within the terrain it can render them in groups like this
+ if you try to do this on a one polygon basis you'll end up rendering too many. its easier to group them
+ in each group give the most radical angles the highest priority - so a steep angled triangle would be D in the above 
+ example
+ er, sorry, the steepest would be A
+"""

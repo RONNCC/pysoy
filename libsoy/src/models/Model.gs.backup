@@ -1,0 +1,55 @@
+/*
+ *  libsoy - soy.models.Model
+ *  Copyright (C) 2006,2007,2008,2009,2010,2011,2012 Copyleft Games Group
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program; if not, see http://www.gnu.org/licenses
+ *
+ */
+
+[indent=4]
+uses
+    GL
+
+class soy.models.Model : Object
+    // This class will eventually allow Python developers to write their own
+    // rendering models.  Its also a nice base class.
+
+    // Sets model's matrix.
+    def mult_model_matrix(body : soy.bodies.Body)
+        var _mtx = new array of GLfloat[16]
+
+        _mtx[0]  = (GLfloat) body.rotation_matrix.m0
+        _mtx[1]  = (GLfloat) body.rotation_matrix.m4
+        _mtx[2]  = (GLfloat) body.rotation_matrix.m8
+        _mtx[3]  = (GLfloat) 0.0
+        _mtx[4]  = (GLfloat) body.rotation_matrix.m1
+        _mtx[5]  = (GLfloat) body.rotation_matrix.m5
+        _mtx[6]  = (GLfloat) body.rotation_matrix.m9
+        _mtx[7]  = (GLfloat) 0.0
+        _mtx[8]  = (GLfloat) body.rotation_matrix.m2
+        _mtx[9]  = (GLfloat) body.rotation_matrix.m6
+        _mtx[10] = (GLfloat) body.rotation_matrix.ma
+        _mtx[11] = (GLfloat) 0.0
+        _mtx[12] = (GLfloat) body.position.x
+        _mtx[13] = (GLfloat) body.position.y
+        _mtx[14] = (GLfloat) body.position.z
+        _mtx[15] = (GLfloat) 1.0
+        glMultMatrixf(_mtx)
+        
+
+    def virtual render ( body : soy.bodies.Body )
+        return
+
+    def virtual calcFogCoords ( _depth : float )
+        return

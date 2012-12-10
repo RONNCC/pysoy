@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd ~/GCI/libsoy
+sudo ./waf configure && sudo ./waf build && sudo ~/GCI/libsoy/waf install 
+cd ~/GCI/pysoy 
+sudo python3 setup.py build && sudo python3 ~/GCI/pysoy/setup.py install

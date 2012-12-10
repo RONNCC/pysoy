@@ -1,0 +1,54 @@
+# PySoy's masses.Mass
+#
+# Copyright (C) 2006,2007,2008,2009 PySoy Group
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program; if not, see http://www.gnu.org/licenses
+#
+# $Id: Mass.pym 1393 2008-12-31 23:51:25Z ArcRiley $
+
+
+cdef class Mass :
+    '''PySoy Mass
+
+    This class gives bodies a physical presence for Mass
+    
+    '''
+
+    def __cinit__(self,soy.bodies.Body body, *args, **kw) :
+        cdef ode.dMass m
+        self._mass = m
+        self._body = body
+        self._bodyID = body._bodyID
+        #pass
+      
+
+    property mass :
+
+      def __get__(self) :
+        return self._mass.mass
+
+      def __set__(self, value) :
+        if type(value)!=float and type(value)!=int :
+          raise TypeError('Must provide an integer or float')
+        if value < 0 :
+          raise TypeError('No negative masses')
+        elif self._bodyID :
+          self._mass.mass = value
+          if value != 0 :
+            ode.dBodySetGravityMode(self._bodyID, 1)
+          else:
+            ode.dBodySetGravityMode(self._bodyID, 0)
+        else :
+          self._mass.mass = value
+

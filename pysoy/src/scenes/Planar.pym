@@ -1,0 +1,217 @@
+# PySoy's scenes.Planar class
+#
+# Copyright (C) 2006,2007,2008,2009 PySoy Group
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program; if not, see http://www.gnu.org/licenses
+#
+# $Id: Planar.pym 1393 2008-12-31 23:51:25Z ArcRiley $
+DEF GeomScene = 1
+DEF GeomBody = 2
+DEF GeomField = 4
+DEF GeomLight = 8
+
+cimport soy.materials
+
+
+cdef class Planar (Scene) :
+  ''' Planar Scene
+
+    This is a :class:`~soy.scenes.Scene` based on a collision plane of infinite size facing up in 
+    the direction of gravity.
+  '''
+
+  ############################################################################
+  #
+  # Python functions
+  #
+
+  def __cinit__(self, offset=0, step=15, material=None, *args, **kw) :
+    cdef int _i
+    cdef Vert _a, _b, _c, _d, _e, _f
+    
+    self._offset = offset
+    self._planeID = ode.dCreatePlane(self._spaceID, 0.0, 1.0, 0.0, self._offset)
+    ode.dGeomSetCategoryBits(self._planeID,GeomScene)
+    ode.dGeomSetData(self._planeID, <void*> self)
+    
+    size = 100
+    #
+    # Create the verts for the first, biggest triangle
+    self._verts[0].px = 0.0
+    self._verts[0].py = self._offset
+    self._verts[0].pz = size + (ode.dSin(60)*size)/2
+    self._verts[1].px = ode.dCos(60)*size
+    self._verts[1].py = self._offset
+    self._verts[1].pz = ode.dSin(60)*size + (ode.dSin(60)*size)/2
+    self._verts[2].px = -ode.dCos(60)*size
+    self._verts[2].py = self._offset
+    self._verts[2].pz = ode.dSin(60)*size + (ode.dSin(60)*size)/2
+    #
+    # Provide array indices in order for the triangle face
+    self._faces[0].a  = 0
+    self._faces[0].b  = 2
+    self._faces[0].c  = 1
+    _a = self._verts[0]
+    _b = self._verts[1]
+    _c = self._verts[2]
+
+    self._verts[0].tx = _a.px - ode.dFabs(_a.px)
+    self._verts[0].ty = _a.pz - ode.dFabs(_a.pz)
+    self._verts[1].tx = _b.px - ode.dFabs(_b.px)
+    self._verts[1].ty = _b.pz - ode.dFabs(_b.pz)
+    self._verts[2].tx = _c.px - ode.dFabs(_c.px)
+    self._verts[2].ty = _c.pz - ode.dFabs(_c.pz)
+    
+    for _i from 1 <= _i < step :
+      #
+      # We get the midpoints from the smallest (encapsulating) triangle
+      # and create faces from them
+      _d = self._midpoint(_a,_b)
+      _e = self._midpoint(_b,_c)
+      _f = self._midpoint(_c,_a)
+      #
+      # Calculate the verts
+      _d.py = self._offset
+      _e.py = self._offset
+      _f.py = self._offset
+      _d.tx = _d.px - ode.dFabs(_d.px)
+      _d.ty = _d.pz - ode.dFabs(_d.pz)
+      _e.tx = _e.px - ode.dFabs(_e.px)
+      _e.ty = _e.pz - ode.dFabs(_e.pz)
+      _f.tx = _f.px - ode.dFabs(_f.px)
+      _f.ty = _f.pz - ode.dFabs(_f.pz)
+      #
+      # Set the verts for this triangle
+      self._verts[_i*3]   = _d
+      self._verts[_i*3+1] = _e
+      self._verts[_i*3+2] = _f
+      #
+      # Provide array indices in order for the triangle face
+      self._faces[_i].a   = _i*3
+      self._faces[_i].b   = _i*3+2
+      self._faces[_i].c   = _i*3+1
+      _a = _d
+      _b = _e
+      _c = _f
+    
+    #
+    # Set the material of the plane
+    if isinstance(material, soy.materials.Material) :    
+      self._material = material      
+    elif material == None:
+      self._material = soy.materials.Material()
+    else:
+      raise TypeError('Must provide an instance of soy.materials.Material')
+
+
+  def __dealloc__(self) :
+    ode.dGeomDestroy(self._planeID)
+
+
+  ############################################################################
+  #
+  # Properties
+  #
+
+  property material :
+    def __get__(self) :
+      return self._material
+    def __set__(self, value) :
+      assert isinstance(value, soy.materials.Material), \
+        "Must provide an instance of soy.materials.Material"
+      self._material = value
+
+
+  property gravity :
+    '''Scene gravity
+
+    This is a scene-wide pseudo-force drawing all bodies in a single 
+    direction.  This should not be confused with a monopole force or other
+    forces which are often used for gravity in larger scenes.
+
+    Takes a (x,y,z) tuple of numbers, defaults to (0.0, 0.0, 0.0)
+    An offset for the Y axis may be provided by a fourth value in the tuple.
+    '''
+    def __get__(self) :
+      cdef ode.dVector3 _grav
+      ode.dWorldGetGravity(self._worldID, _grav)
+      return (_grav[0], _grav[1], _grav[2])
+    
+    def __set__(self, value) :
+      cdef ode.dVector3 _normal
+      assert type(value) == list and type(value) == tuple, \
+          "A tuple or list must be provided."
+      _normal[0] = -(value[0])
+      _normal[1] = -(value[1])
+      _normal[2] = -(value[2])
+      #
+      # If fourth value is provided, set the offset
+      if len(value) == 4: 
+        #stdio.printf("4 Values! using the fourth one as offset")
+        #print value[3]
+        self._offset = value[3]
+      #
+      # Now that we have all of the points set, destroy the old plane and
+      # make a new one with updated position.
+      ode.dGeomDestroy(self._planeID)
+      ode.dNormalize3(_normal)
+      self._planeID = ode.dCreatePlane(self._spaceID, _normal[0], _normal[1], _normal[2], self._offset)
+      ode.dGeomSetCategoryBits(self._planeID,GeomScene)
+      ode.dGeomSetData(self._planeID, <void*> self)
+      ode.dWorldSetGravity(self._worldID, value[0], value[1], value[2])
+
+
+  ############################################################################
+  #
+  # General C functions
+  #
+
+  cdef void _render(self, gl.GLdouble _fovy,  gl.GLdouble _aspect,
+                          gl.GLdouble _znear, gl.GLdouble _zfar) :
+    #
+    # Setup projection matrix
+    gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    gl.gluPerspective(_fovy, _aspect, _znear, _zfar)
+
+    self._material._coreBind()
+    
+    gl.glVertexPointer  (3,  gl.GL_FLOAT, 48, &self._verts[0].px)
+    gl.glNormalPointer  (    gl.GL_FLOAT, 48, &self._verts[0].nx)
+    gl.glTexCoordPointer(3,  gl.GL_FLOAT, 48, &self._verts[0].tx)
+    #cdef gl.GLfloat  mtx[16]
+    #self._coreGetModelview(mtx)
+    #gl.glPushMatrix()
+    #gl.glMultMatrixf(mtx)
+        
+    gl.glDrawElements   (gl.GL_TRIANGLES, 60, gl.GL_UNSIGNED_SHORT, 
+                         <unsigned short*> self._faces)
+    
+    #gl.glPopMatrix()
+    self._material._coreUnBind()
+    Scene._render(self, _fovy, _aspect, _znear, _zfar)
+    #gl.glEnable(gl.GL_DEPTH_BUFFER)
+
+
+  cdef Vert _midpoint(self, Vert a, Vert b):
+    cdef Vert _res
+    #
+    # Get midpoint between two points, (a.x+b.x)/2, etc..
+    x = 0.5*(a.px+b.px)
+    y = 0.5*(a.py+b.py)
+    z = 0.5*(a.pz+b.pz)
+    _res.px = x
+    _res.py = y
+    _res.pz = z
+    return _res
