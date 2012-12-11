@@ -151,6 +151,20 @@ class TestColor(unittest.TestCase):
     color.hex = "#123"
     self.assertEqual(color.hex, "#112233ff")
 
+  def testCompare(self):
+    self.assertTrue(soy.atoms.Color('white') >= soy.atoms.Color('blue'))
+    self.assertTrue(soy.atoms.Color('white') >= soy.atoms.Color('white'))
+    self.assertFalse(soy.atoms.Color('blue') >= soy.atoms.Color('white'))
+    self.assertTrue(soy.atoms.Color('blue') <= soy.atoms.Color('white'))
+    self.assertTrue(soy.atoms.Color('white') <= soy.atoms.Color('white'))
+    self.assertFalse(soy.atoms.Color('white') <= soy.atoms.Color('blue'))
+    self.assertTrue(soy.atoms.Color('blue') < soy.atoms.Color('white'))
+    self.assertFalse(soy.atoms.Color('white') < soy.atoms.Color('white')) 
+    self.assertFalse(soy.atoms.Color('white') < soy.atoms.Color('blue'))
+    self.assertTrue(soy.atoms.Color('white') > soy.atoms.Color('blue'))
+    self.assertFalse(soy.atoms.Color('white') > soy.atoms.Color('white'))
+    self.assertFalse(soy.atoms.Color('blue') > soy.atoms.Color('white'))
+
     """
     TODO: Fix or remove these.
     self.assertTrue((soy.atoms.Color('white')*2.0).hex == '#fff * 2.00',

@@ -54,6 +54,7 @@ TestAll.addTests((
   TestArea.TestAreaSuite(),
   TestRotation.TestRotationSuite(),
   TestScene.TestSceneSuite(),
+  TestSize.TestSizeSuite(),
   TestTexture.TestTextureSuite()
 ))
 

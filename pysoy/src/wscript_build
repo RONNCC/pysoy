@@ -1,0 +1,17 @@
+# encoding: utf-8
+source = ['__init__.c'] + bld.path.ant_glob('**/*.c')
+uselib = ['SOY', 'X11', 'XI', 'XXF86VM', 'EGL']
+packages = ['config', 'soy-1.0', 'x11', 'xi', 'xxf86vm', 'egl']
+
+pysoy = bld(
+  features     = 'c cshlib',
+  name         = 'pysoy',
+  target       = 'pysoy',
+  outputs      = 'pysoywaf.h',
+  uselib       = uselib,
+  packages     = packages,
+  includes     = '../include',
+  cflags       = ['-include', 'config.h', '-g'],
+  source       = source
+)
+

@@ -77,7 +77,7 @@ tp_repr (SELF self) {
 ///////////////////////////////////////////////////////////////////////////////
 // Properties
 
-PYSOY_PROP_OBJECT_OWNED(materials, textured, bumpmap, textures_Texture)
+PYSOY_PROP_OBJECT(materials, textured, bumpmap, textures_Texture)
 static char
 bumpmap_doc[] = "Bumpmap Texture\n"
 "    When a :class:`~soy.textures.Texture` is assigned to this property it\n"
@@ -94,7 +94,7 @@ bumpmap_doc[] = "Bumpmap Texture\n"
 "    Default is None (disabled).\n";
 
 
-PYSOY_PROP_OBJECT_OWNED(materials, textured, colormap, textures_Texture)
+PYSOY_PROP_OBJECT(materials, textured, colormap, textures_Texture)
 static char
 colormap_doc[] = "Colormap Texture\n"
 "\n"
@@ -109,7 +109,7 @@ colormap_doc[] = "Colormap Texture\n"
 "    Default is None (disabled).\n";
 
 
-PYSOY_PROP_OBJECT_OWNED(materials, textured, glowmap, textures_Texture)
+PYSOY_PROP_OBJECT(materials, textured, glowmap, textures_Texture)
 static char
 glowmap_doc[] = "Glowmap Texture\n"
 "\n"

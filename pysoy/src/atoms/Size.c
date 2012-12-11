@@ -122,6 +122,49 @@ tp_str (SELF self) {
 }
 
 
+static PyObject*
+tp_richcompare (PyObject *left, PyObject *right, int op) {
+    GObject* c1 = NULL;
+    GObject* c2 = NULL;
+
+    if (!PySoy__G_Check(left) || !PySoy__G_Check(right))
+        return Py_False;
+
+    c1 = ((PySoy__G_Object*) left)->g;
+    c2 = ((PySoy__G_Object*) right)->g;
+
+    if (op == Py_EQ) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_EQ))
+            return Py_True;
+    }
+    else if (op == Py_NE) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_NE))
+            return Py_True;
+    }
+    else if (op == Py_GT) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_GT))
+            return Py_True;
+    }
+    else if (op == Py_LT) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_LT))
+            return Py_True;
+    }
+    else if (op == Py_GE) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_GE))
+            return Py_True;
+    }
+    else if (op == Py_LE) {
+        if (soy_atoms_size_cmp(c1, c2, SOY_COMPARISON_LE))
+            return Py_True;
+    }
+    else {
+        PyErr_SetString(PyExc_NotImplementedError,
+                        "only == and != are supported for soy.atoms.Color");
+        return NULL;
+    }
+    return Py_False;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Number Methods
 
@@ -593,7 +636,7 @@ PyTypeObject PySoy_atoms_Size_Type = {
     tp_doc,                                                // tp_doc
     0,                                                     // tp_traverse
     0,                                                     // tp_clear
-    0,                                                     // tp_richcompare
+    tp_richcompare,                                        // tp_richcompare
     0,                                                     // tp_weaklistoffset
     0,                                                     // tp_iter
     0,                                                     // tp_iternext

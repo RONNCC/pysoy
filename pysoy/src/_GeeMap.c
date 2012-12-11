@@ -19,6 +19,7 @@
 #include "pysoy2.h"
 #define SELF PySoy__GeeMap_Object*
 
+
 static char
 tp_doc[] = "soy._GeeMap Type\n";
 
@@ -148,6 +149,7 @@ sq_contains (SELF self, PyObject* key) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Mapping methods
+
 static PyObject*
 mp_subscript (SELF self, PyObject* key) {
     PyObject* name;
@@ -228,7 +230,8 @@ mp_ass_subscript (SELF self, PyObject* key, PyObject* value) {
     if (!PySoy__G_Check(value)) {
         // Raise exception
         Py_DECREF(name);
-        PyErr_SetString(PyExc_TypeError, "attribute value must be a PySoy type");
+        PyErr_SetString(PyExc_TypeError,
+                        "attribute value must be a PySoy type");
         return -1;
     }
 
@@ -281,6 +284,7 @@ keys (SELF self, PyObject* args) {
     return (PyObject*) ret;
 }
 
+
 static char
 values_doc[] = "Return values of the HashMap";
 
@@ -308,8 +312,8 @@ values (SELF self, PyObject* args) {
         // Get new PySoy.bodies.Body object
         g = self->get((gpointer) self->g, key);
         value = (PySoy__G_Object*)
-                PyType_GenericNew(g_type_get_qdata(G_OBJECT_TYPE(g), GPyObject),
-                                  NULL, NULL);
+                PyType_GenericNew(g_type_get_qdata(G_OBJECT_TYPE(g),
+                                                   GPyObject), NULL, NULL);
         if (!value) return NULL;
         value->g = g;
 
@@ -323,9 +327,6 @@ values (SELF self, PyObject* args) {
 
     return (PyObject*) ret;
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// Properties
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -365,11 +366,6 @@ static PyMethodDef tp_methods[] = {
 };
 
 
-static PyGetSetDef tp_getset[] = {
-    {NULL}                                                 // sentinel
-};
-
-
 PyTypeObject PySoy__GeeMap_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "soy._GeeMap",                                         // tp_name
@@ -400,7 +396,7 @@ PyTypeObject PySoy__GeeMap_Type = {
     0,                                                     // tp_iternext
     tp_methods,                                            // tp_methods
     0,                                                     // tp_members
-    tp_getset,                                             // tp_getset
+    0,                                                     // tp_getset
     &PySoy__G_Type,                                        // tp_base
     0,                                                     // tp_dict
     0,                                                     // tp_descr_get

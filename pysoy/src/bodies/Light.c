@@ -54,14 +54,17 @@ static PyObject*
 tp_new (PyTypeObject* type, PyObject* args, PyObject* kwds) {
     SELF self;
     PyObject* py_position = NULL;
+    PySoy_textures_Texture_Object* py_texture = NULL;
     soyatomsPosition* position = NULL;
+    soytexturesTexture* texture = NULL;
+    float size = 1.0;
     float x, y, z;
-    static char* kw[] = {"position", NULL};
+    static char* kw[] = {"position", "size", "texture", NULL};
 
     // Parse arguments
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "|O", kw,
-            &py_position))
+            args, kwds, "|OfO!", kw,
+            &py_position, &size, &PySoy_textures_Texture_Type, &py_texture))
         return NULL;
 
     // Parse py_position if its neither NULL or a Position type
@@ -79,13 +82,17 @@ tp_new (PyTypeObject* type, PyObject* args, PyObject* kwds) {
         }
     }
 
+
+    // Grab texture's gobject
+    texture = (py_texture) ? py_texture->g : NULL;
+
     // inherit base type
     self = (SELF) PyType_GenericNew(type, args, kwds);
     if (!self)
       return NULL;
 
     // new gobject
-    self->g = soy_bodies_light_new(position);
+    self->g = soy_bodies_light_new(position, size, texture);
 
     // unref position
     if (position) g_object_unref(position);
@@ -149,7 +156,8 @@ static char
 specular_doc[] = "Specular Lighting\n"
 "\n"
 "    Specular Lighting is mirror-like reflection visible on object.  Just\n"
-"    like Diffuse light, Specular light is a directional type of light.  It\n" "    comes from one direction.  The difference between the two is that\n"
+"    like Diffuse light, Specular light is a directional type of light.  It\n"
+"    comes from one direction.  The difference between the two is that\n"
 "    specular light reflects off the surface in a sharp and uniform way. The\n"
 "    rendering of specular light relies on the angle between the viewer and\n"
 "    the light source. From the viewer's standpoint specular light creates\n"
@@ -165,6 +173,31 @@ specular_doc[] = "Specular Lighting\n"
 "\n";
 PYSOY_PROP_OBJECT_OWNED(bodies, light, specular, atoms_Color);
 
+static char
+size_doc[] = "Size\n"
+"\n"
+"    If a light has a non-zero size, then it will render a circle with\n"
+"    a texture. A texture is required.\n"
+"\n"
+"        >>> scene = soy.scenes.Scene()\n"
+"        >>> light = soy.bodies.Light(scene)\n"
+"        >>> light.size = 0.5\n"
+"\n"
+"    Default 0.0\n"
+"\n";
+PYSOY_PROP_FLOAT(bodies, light, size);
+
+static char
+texture_doc[] = "Texture\n"
+"\n"
+"    This is the texture the light will use in rendering when it has a\n"
+"    non-zero size. Required for rendering.\n"
+"\n"
+"        >>> scene = soy.scenes.Scene()\n"
+"        >>> light = soy.bodies.Light(scene)\n"
+"        >>> light.texture = soy.textures.Texture('filename.png')\n"
+"\n";
+PYSOY_PROP_OBJECT(bodies, light, texture, textures_Texture);
 
 // TODO radius
 
@@ -176,6 +209,8 @@ static PyGetSetDef tp_getset[] = {
     PYSOY_PROPSTRUCT(ambient),
     PYSOY_PROPSTRUCT(diffuse),
     PYSOY_PROPSTRUCT(specular),
+    PYSOY_PROPSTRUCT(size),
+    PYSOY_PROPSTRUCT(texture),
     {NULL}                                                  // sentinel
 };
 

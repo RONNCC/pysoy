@@ -150,10 +150,10 @@ tp_richcompare (PyObject *left, PyObject *right, int op) {
             return Py_True;
     }
     else {
-        PyErr_SetString(PyExc_NotImplementedError,
-                        "only == and != are supported for soy.atoms.Color");
-        return NULL;
+        if (soy_atoms_color_cmp(c1, c2, op))
+            return Py_True;
     }
+    
     return Py_False;
 }
 
@@ -165,11 +165,15 @@ static PyObject*
 nb_add (PyObject* o1, PyObject* o2) {
     soyatomsColor* c1 = NULL;
     soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
     SELF result;
 
     if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
         c1 = ((SELF) o1)->g;
         c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
     }
     else {
         PyErr_SetString(PyExc_TypeError,
@@ -184,7 +188,7 @@ nb_add (PyObject* o1, PyObject* o2) {
         return NULL;
 
     // new gobject
-    result->g = soy_atoms_color_new_add(c1, c2);
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_ADD);
 
     // return result
     return (PyObject*) result;
@@ -195,11 +199,15 @@ static PyObject*
 nb_subtract (PyObject* o1, PyObject* o2) {
     soyatomsColor* c1 = NULL;
     soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
     SELF result;
 
     if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
         c1 = ((SELF) o1)->g;
         c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
     }
     else {
         PyErr_SetString(PyExc_TypeError,
@@ -214,7 +222,7 @@ nb_subtract (PyObject* o1, PyObject* o2) {
         return NULL;
 
     // new gobject
-    result->g = soy_atoms_color_new_subtract(c1, c2);
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_SUB);
 
     // return result
     return (PyObject*) result;
@@ -225,11 +233,15 @@ static PyObject*
 nb_multiply (PyObject* o1, PyObject* o2) {
     soyatomsColor* c1 = NULL;
     soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
     SELF result;
 
     if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
         c1 = ((SELF) o1)->g;
         c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
     }
     else {
         PyErr_SetString(PyExc_TypeError,
@@ -244,7 +256,7 @@ nb_multiply (PyObject* o1, PyObject* o2) {
         return NULL;
 
     // new gobject
-    result->g = soy_atoms_color_new_multiply(c1, c2);
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_MUL);
 
     // return result
     return (PyObject*) result;
@@ -255,11 +267,15 @@ static PyObject*
 nb_true_divide (PyObject* o1, PyObject* o2) {
     soyatomsColor* c1 = NULL;
     soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
     SELF result;
 
     if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
         c1 = ((SELF) o1)->g;
         c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
     }
     else {
         PyErr_SetString(PyExc_TypeError,
@@ -274,12 +290,110 @@ nb_true_divide (PyObject* o1, PyObject* o2) {
         return NULL;
 
     // new gobject
-    result->g = soy_atoms_color_new_divide(c1, c2);
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_DIV);
 
     // return result
     return (PyObject*) result;
 }
 
+static PyObject*
+nb_remainder (PyObject* o1, PyObject* o2) {
+    soyatomsColor* c1 = NULL;
+    soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
+    SELF result;
+
+    if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
+        c1 = ((SELF) o1)->g;
+        c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError,
+                        "arguments are not of type soy.atoms.Color");
+        return NULL;
+    }
+
+    // create result object
+    result = (SELF) PyType_GenericNew(&PySoy_atoms_Color_Type,
+                                      NULL, NULL);
+    if (!result)
+        return NULL;
+
+    // new gobject
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_MOD);
+
+    // return result
+    return (PyObject*) result;
+}
+
+static PyObject*
+nb_and (PyObject* o1, PyObject* o2) {
+    soyatomsColor* c1 = NULL;
+    soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
+    SELF result;
+
+    if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
+        c1 = ((SELF) o1)->g;
+        c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError,
+                        "arguments are not of type soy.atoms.Color");
+        return NULL;
+    }
+
+    // create result object
+    result = (SELF) PyType_GenericNew(&PySoy_atoms_Color_Type,
+                                      NULL, NULL);
+    if (!result)
+        return NULL;
+
+    // new gobject
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_AND);
+
+    // return result
+    return (PyObject*) result;
+}
+
+static PyObject*
+nb_or (PyObject* o1, PyObject* o2) {
+    soyatomsColor* c1 = NULL;
+    soyatomsColor* c2 = NULL;
+    double right_color = 0.0;
+    SELF result;
+
+    if (PySoy_atoms_Color_Check(o1) && PySoy_atoms_Color_Check(o2)) {
+        c1 = ((SELF) o1)->g;
+        c2 = ((SELF) o2)->g;
+    }
+    else if(PySoy_atoms_Color_Check(o1) && (right_color = PyFloat_AsDouble(o2)) != -1.0) {
+        c1 = ((SELF) o1)->g;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError,
+                        "arguments are not of type soy.atoms.Color");
+        return NULL;
+    }
+
+    // create result object
+    result = (SELF) PyType_GenericNew(&PySoy_atoms_Color_Type,
+                                      NULL, NULL);
+    if (!result)
+        return NULL;
+
+    // new gobject
+    result->g = soy_atoms_color_new_operate(c1, c2, right_color, SOY_MATH_OPERATOR_OR);
+
+    // return result
+    return (PyObject*) result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Properties
@@ -326,7 +440,7 @@ static PyNumberMethods tp_as_number = {
     nb_add,                                     // nb_add
     nb_subtract,                                // nb_subtract
     nb_multiply,                                // nb_multiply
-    0,                                          // nb_remainder
+    nb_remainder,                               // nb_remainder
     0,                                          // nb_divmod
     0,                                          // nb_power
     0,                                          // nb_negative
@@ -336,9 +450,9 @@ static PyNumberMethods tp_as_number = {
     0,                                          // nb_invert
     0,                                          // nb_lshift
     0,                                          // nb_rshift
-    0,                                          // nb_and
+    nb_and,                                     // nb_and
     0,                                          // nb_xor
-    0,                                          // nb_or
+    nb_or,                                      // nb_or
     0,                                          // nb_int
     0,                                          // nb_reserved
     0,                                          // nb_float
