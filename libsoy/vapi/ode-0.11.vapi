@@ -21,7 +21,7 @@
 using GLib;
 
 [CCode (cprefix = "d", lower_case_cprefix = "d",
-        cheader_filename = "ode.h")]
+        cheader_filename = "soy-1/ode.h")]
 namespace ode {
 
     /***********************************************************************\

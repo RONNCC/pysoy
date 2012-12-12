@@ -34,11 +34,12 @@ class soy.bodies.Light : soy.bodies.Body
         _diffuse = {0.5f, 0.5f, 0.5f, 1.0f}
         _specular = {1.0f, 1.0f, 1.0f, 1.0f}
         _radius = 180.0f
-        _size = 0.5f
 
-    construct (position : soy.atoms.Position?)
+    construct (position : soy.atoms.Position?, size : float, texture : soy.textures.Texture?)
         super(position, null, 0.0f)
         _updated = true
+        _texture = texture
+        _size = size
 
     final
         if self.scene.lights.contains(self)
@@ -297,7 +298,7 @@ class soy.bodies.Light : soy.bodies.Body
 
     //
     // size Property
-    _size : float
+    _size : GLfloat
     prop size : float
         get
             return self._size

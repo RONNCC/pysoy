@@ -232,7 +232,7 @@ class soy.net.Client : Object
         this.window = new soy.widgets.Window(null)
         this.scene = new soy.scenes.Room(5.0f)
 
-        var light = new soy.bodies.Light(new soy.atoms.Position(-2, 3, -5))
+        var light = new soy.bodies.Light(new soy.atoms.Position(-2, 3, -5), 0.0f, new soy.textures.Texture())
 
         var cam = new soy.bodies.Camera(new soy.atoms.Position(0, 0, 20))
 

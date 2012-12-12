@@ -1,1 +1,1 @@
-added glowmap example
+remove the use of "magic"

@@ -20,7 +20,8 @@
 #define __PYSOY_H__
 
 #include <Python.h>
-#include <soy.h>
+#include <soy-1/soy.h>
+#include <soy-1/config.h>
 #include <gio/gio.h>
 #include <X11/extensions/XInput2.h>
 #include <EGL/egl.h>
@@ -574,6 +575,15 @@ typedef struct {
 // soy.bodies
 
 PyMODINIT_FUNC PyInit_soy_bodies(void);
+
+// soy.bodies.Billboard
+PyTypeObject PySoy_bodies_Billboard_Type;
+typedef struct {
+    PyObject_HEAD
+    soybodiesBillboard* g;
+} PySoy_bodies_Billboard_Object;
+#define PySoy_bodies_Billboard_Check(op) \
+    PyObject_TypeCheck(op, &PySoy_bodies_Billboard_Type)
 
 // soy.bodies.Body
 PyTypeObject PySoy_bodies_Body_Type;

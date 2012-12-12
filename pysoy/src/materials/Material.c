@@ -22,7 +22,13 @@
 
 static char
 tp_doc[] = "soy.materials.Material Type\n"
-"\n";
+"\n"
+"This is the top level of Materials. It defines "
+" a basic what-should-we-render and turns off  "
+" additional textures that opengl may look at."
+"\n"
+""
+;
 // TODO
 
 

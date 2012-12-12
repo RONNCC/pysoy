@@ -37,6 +37,9 @@ typedef struct _soyatomsSize soyatomsSize;
 typedef struct _soyatomsSizeClass soyatomsSizeClass;
 typedef struct _soyatomsSizePrivate soyatomsSizePrivate;
 
+#define SOY_TYPE_COMPARISON (soy_comparison_get_type ())
+#define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
+
 struct _soyatomsSize {
 	GObject parent_instance;
 	soyatomsSizePrivate * priv;
@@ -52,6 +55,15 @@ struct _soyatomsSizePrivate {
 	gfloat _depth;
 };
 
+typedef enum  {
+	SOY_COMPARISON_LT,
+	SOY_COMPARISON_LE,
+	SOY_COMPARISON_NE,
+	SOY_COMPARISON_EQ,
+	SOY_COMPARISON_GT,
+	SOY_COMPARISON_GE
+} soyComparison;
+
 
 static gpointer soy_atoms_size_parent_class = NULL;
 
@@ -66,11 +78,13 @@ enum  {
 soyatomsSize* soy_atoms_size_new (gfloat width, gfloat height, gfloat depth);
 soyatomsSize* soy_atoms_size_construct (GType object_type, gfloat width, gfloat height, gfloat depth);
 void soy_atoms_size_set (soyatomsSize* self, gfloat width, gfloat height, gfloat depth);
+GType soy_comparison_get_type (void) G_GNUC_CONST;
+gboolean soy_atoms_size_cmp (GObject* left, GObject* right, soyComparison comparison);
 gfloat soy_atoms_size_get_width (soyatomsSize* self);
-void soy_atoms_size_set_width (soyatomsSize* self, gfloat value);
 gfloat soy_atoms_size_get_height (soyatomsSize* self);
-void soy_atoms_size_set_height (soyatomsSize* self, gfloat value);
 gfloat soy_atoms_size_get_depth (soyatomsSize* self);
+void soy_atoms_size_set_width (soyatomsSize* self, gfloat value);
+void soy_atoms_size_set_height (soyatomsSize* self, gfloat value);
 void soy_atoms_size_set_depth (soyatomsSize* self, gfloat value);
 static void soy_atoms_size_finalize (GObject* obj);
 static void _vala_soy_atoms_size_get_property (GObject * object, guint property_id, GValue * value, GParamSpec * pspec);
@@ -110,6 +124,237 @@ void soy_atoms_size_set (soyatomsSize* self, gfloat width, gfloat height, gfloat
 	_tmp2_ = depth;
 	self->priv->_depth = _tmp2_;
 	g_signal_emit_by_name (self, "on-set", self);
+}
+
+
+static gpointer _g_object_ref0 (gpointer self) {
+	return self ? g_object_ref (self) : NULL;
+}
+
+
+gboolean soy_atoms_size_cmp (GObject* left, GObject* right, soyComparison comparison) {
+	gboolean result = FALSE;
+	gboolean _tmp0_ = FALSE;
+	GObject* _tmp1_;
+	gboolean _tmp3_;
+	GObject* _tmp4_;
+	soyatomsSize* _tmp5_;
+	soyatomsSize* lefta;
+	GObject* _tmp6_;
+	soyatomsSize* _tmp7_;
+	soyatomsSize* righta;
+	gboolean _tmp8_ = FALSE;
+	soyComparison _tmp9_;
+	gboolean _tmp11_;
+	soyatomsSize* _tmp38_;
+	gfloat _tmp39_;
+	gfloat _tmp40_;
+	soyatomsSize* _tmp41_;
+	gfloat _tmp42_;
+	gfloat _tmp43_;
+	soyatomsSize* _tmp44_;
+	gfloat _tmp45_;
+	gfloat _tmp46_;
+	gfloat leftarea;
+	soyatomsSize* _tmp47_;
+	gfloat _tmp48_;
+	gfloat _tmp49_;
+	soyatomsSize* _tmp50_;
+	gfloat _tmp51_;
+	gfloat _tmp52_;
+	soyatomsSize* _tmp53_;
+	gfloat _tmp54_;
+	gfloat _tmp55_;
+	gfloat rightarea;
+	soyComparison _tmp56_;
+	g_return_val_if_fail (left != NULL, FALSE);
+	g_return_val_if_fail (right != NULL, FALSE);
+	_tmp1_ = left;
+	if (!G_TYPE_CHECK_INSTANCE_TYPE (_tmp1_, SOY_ATOMS_TYPE_SIZE)) {
+		_tmp0_ = TRUE;
+	} else {
+		GObject* _tmp2_;
+		_tmp2_ = right;
+		_tmp0_ = !G_TYPE_CHECK_INSTANCE_TYPE (_tmp2_, SOY_ATOMS_TYPE_SIZE);
+	}
+	_tmp3_ = _tmp0_;
+	if (_tmp3_) {
+		result = FALSE;
+		return result;
+	}
+	_tmp4_ = left;
+	_tmp5_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp4_, SOY_ATOMS_TYPE_SIZE, soyatomsSize));
+	lefta = _tmp5_;
+	_tmp6_ = right;
+	_tmp7_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp6_, SOY_ATOMS_TYPE_SIZE, soyatomsSize));
+	righta = _tmp7_;
+	_tmp9_ = comparison;
+	if (_tmp9_ == SOY_COMPARISON_EQ) {
+		_tmp8_ = TRUE;
+	} else {
+		soyComparison _tmp10_;
+		_tmp10_ = comparison;
+		_tmp8_ = _tmp10_ == SOY_COMPARISON_NE;
+	}
+	_tmp11_ = _tmp8_;
+	if (_tmp11_) {
+		gboolean _w = FALSE;
+		gboolean _h = FALSE;
+		gboolean _d = FALSE;
+		soyatomsSize* _tmp12_;
+		gfloat _tmp13_;
+		gfloat _tmp14_;
+		soyatomsSize* _tmp15_;
+		gfloat _tmp16_;
+		gfloat _tmp17_;
+		soyatomsSize* _tmp18_;
+		gfloat _tmp19_;
+		gfloat _tmp20_;
+		soyatomsSize* _tmp21_;
+		gfloat _tmp22_;
+		gfloat _tmp23_;
+		soyatomsSize* _tmp24_;
+		gfloat _tmp25_;
+		gfloat _tmp26_;
+		soyatomsSize* _tmp27_;
+		gfloat _tmp28_;
+		gfloat _tmp29_;
+		soyComparison _tmp30_;
+		_tmp12_ = lefta;
+		_tmp13_ = soy_atoms_size_get_width (_tmp12_);
+		_tmp14_ = _tmp13_;
+		_tmp15_ = righta;
+		_tmp16_ = soy_atoms_size_get_width (_tmp15_);
+		_tmp17_ = _tmp16_;
+		_w = _tmp14_ == _tmp17_;
+		_tmp18_ = lefta;
+		_tmp19_ = soy_atoms_size_get_height (_tmp18_);
+		_tmp20_ = _tmp19_;
+		_tmp21_ = righta;
+		_tmp22_ = soy_atoms_size_get_height (_tmp21_);
+		_tmp23_ = _tmp22_;
+		_h = _tmp20_ == _tmp23_;
+		_tmp24_ = lefta;
+		_tmp25_ = soy_atoms_size_get_depth (_tmp24_);
+		_tmp26_ = _tmp25_;
+		_tmp27_ = righta;
+		_tmp28_ = soy_atoms_size_get_depth (_tmp27_);
+		_tmp29_ = _tmp28_;
+		_d = _tmp26_ == _tmp29_;
+		_tmp30_ = comparison;
+		if (_tmp30_ == SOY_COMPARISON_EQ) {
+			gboolean _tmp31_;
+			gboolean _tmp32_;
+			gboolean _tmp33_;
+			_tmp31_ = _w;
+			_tmp32_ = _h;
+			_tmp33_ = _d;
+			result = (_tmp31_ & _tmp32_) & _tmp33_;
+			_g_object_unref0 (righta);
+			_g_object_unref0 (lefta);
+			return result;
+		} else {
+			soyComparison _tmp34_;
+			_tmp34_ = comparison;
+			if (_tmp34_ == SOY_COMPARISON_NE) {
+				gboolean _tmp35_;
+				gboolean _tmp36_;
+				gboolean _tmp37_;
+				_tmp35_ = _w;
+				_tmp36_ = _h;
+				_tmp37_ = _d;
+				result = !((_tmp35_ & _tmp36_) & _tmp37_);
+				_g_object_unref0 (righta);
+				_g_object_unref0 (lefta);
+				return result;
+			}
+		}
+	}
+	_tmp38_ = lefta;
+	_tmp39_ = soy_atoms_size_get_width (_tmp38_);
+	_tmp40_ = _tmp39_;
+	_tmp41_ = lefta;
+	_tmp42_ = soy_atoms_size_get_height (_tmp41_);
+	_tmp43_ = _tmp42_;
+	_tmp44_ = lefta;
+	_tmp45_ = soy_atoms_size_get_depth (_tmp44_);
+	_tmp46_ = _tmp45_;
+	leftarea = (_tmp40_ * _tmp43_) * _tmp46_;
+	_tmp47_ = righta;
+	_tmp48_ = soy_atoms_size_get_width (_tmp47_);
+	_tmp49_ = _tmp48_;
+	_tmp50_ = righta;
+	_tmp51_ = soy_atoms_size_get_height (_tmp50_);
+	_tmp52_ = _tmp51_;
+	_tmp53_ = righta;
+	_tmp54_ = soy_atoms_size_get_depth (_tmp53_);
+	_tmp55_ = _tmp54_;
+	rightarea = (_tmp49_ * _tmp52_) * _tmp55_;
+	_tmp56_ = comparison;
+	switch (_tmp56_) {
+		case SOY_COMPARISON_GT:
+		{
+			{
+				gfloat _tmp57_;
+				gfloat _tmp58_;
+				_tmp57_ = leftarea;
+				_tmp58_ = rightarea;
+				result = _tmp57_ > _tmp58_;
+				_g_object_unref0 (righta);
+				_g_object_unref0 (lefta);
+				return result;
+			}
+			break;
+		}
+		case SOY_COMPARISON_LT:
+		{
+			{
+				gfloat _tmp59_;
+				gfloat _tmp60_;
+				_tmp59_ = leftarea;
+				_tmp60_ = rightarea;
+				result = _tmp59_ < _tmp60_;
+				_g_object_unref0 (righta);
+				_g_object_unref0 (lefta);
+				return result;
+			}
+			break;
+		}
+		case SOY_COMPARISON_GE:
+		{
+			{
+				gfloat _tmp61_;
+				gfloat _tmp62_;
+				_tmp61_ = leftarea;
+				_tmp62_ = rightarea;
+				result = _tmp61_ >= _tmp62_;
+				_g_object_unref0 (righta);
+				_g_object_unref0 (lefta);
+				return result;
+			}
+			break;
+		}
+		case SOY_COMPARISON_LE:
+		{
+			{
+				gfloat _tmp63_;
+				gfloat _tmp64_;
+				_tmp63_ = leftarea;
+				_tmp64_ = rightarea;
+				result = _tmp63_ <= _tmp64_;
+				_g_object_unref0 (righta);
+				_g_object_unref0 (lefta);
+				return result;
+			}
+			break;
+		}
+		default:
+		break;
+	}
+	result = FALSE;
+	_g_object_unref0 (righta);
+	_g_object_unref0 (lefta);
+	return result;
 }
 
 

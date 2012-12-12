@@ -26,6 +26,12 @@ develop-eggs
 lib
 lib64
 
+# Waf stuff
+.waf*
+waf*
+__pycache__
+.lock-w*
+
 # Installer logs
 pip-log.txt
 

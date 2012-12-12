@@ -24,7 +24,7 @@
 #include <glib-object.h>
 #include <float.h>
 #include <math.h>
-#include <ode.h>
+#include <soy-1/ode.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gee.h>

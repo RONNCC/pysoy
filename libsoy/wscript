@@ -1,5 +1,5 @@
 # encoding: utf-8
- 
+
 NAME = 'libsoy'
 DATE = 'unreleased'
 VERSION = '1.0_beta3'
@@ -26,23 +26,23 @@ out = 'build'
 
 def options(opt) :
     opt.load('compiler_c')
-    
+
     opt.add_option('--vala-target-glib', default='2.32',
                    dest='vala_target_glib', metavar='MAJOR.MINOR',
                    help='Target version of glib for GObject code generation')
 
     # Unit testing
-    opt.add_option('--runtests', dest='runTests', default=False, 
+    opt.add_option('--runtests', dest='runTests', default=False,
         action='store_true', help='run unit tests found in tests/')
     opt.load('waf_unit_test')
 
 def configure(conf) :
     # Check for a C compiler, valac, and orcc
-    conf.load('compiler_c genie orc')
-    
+    conf.load('compiler_c gas genie orc')
+
     # Unit testing
     conf.load('waf_unit_test')
-    
+
     # Write configuration to disk
     conf.define('SOY_NAME', NAME)
     conf.define('SOY_DATE', DATE)
@@ -96,11 +96,10 @@ def build(bld) :
     # Install config.h in /usr/local/include/soy-1
     bld.install_files('${PREFIX}/include/soy-1', out + '/config.h')
     bld.recurse('src misc include')
-    
+
     # Unit testing
     if bld.options.runTests:
         bld.recurse('tests')
         from waflib.Tools import waf_unit_test
         bld.add_post_fun(waf_unit_test.summary)
-
 

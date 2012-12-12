@@ -26,7 +26,7 @@ uses
 
 class soy.joints.Joint : Object
     joint : ode.joints.Joint
-    scene : weak soy.scenes.Scene
+    scene : weak soy.scenes.Scene 
     bodyA : weak soy.bodies.Body
     bodyB : weak soy.bodies.Body?
     mutex : Mutex
@@ -43,40 +43,78 @@ class soy.joints.Joint : Object
         self.scene = scene
         self.bodyA = bodyA
         self.bodyB = bodyB
-        mutex.lock()
         _jointMtx = new array of GLfloat[16]
 
-        rotation : ode.Matrix3 = new ode.Matrix3()
-
+        mutex.lock()
         posA : unowned ode.Vector3 = bodyA.body.GetPosition()
         posB : unowned ode.Vector3 = bodyB.body.GetPosition()
 
-        thetaXY : ode.Real = (ode.Real) atan2(posB.y - posA.y, posB.x - posA.x)
-        thetaYZ : ode.Real = (ode.Real) atan2(posB.z - posA.z, posB.y - posA.y)
-        thetaXZ : ode.Real = (ode.Real) atan2(posB.z - posA.z, posB.x - posA.x)
+        posAMag : ode.Real = (ode.Real) sqrt(posA.x*posA.x + 
+                                             posA.y*posA.y +
+                                             posA.z*posA.z)
 
-        // (y, z), (x, z),(x, y)
-        rotation.FromEulerAngles(thetaYZ, thetaXZ, thetaXY)
+        normA : ode.Vector3 = new ode.Vector3()
+        normA.x = posA.x / posAMag
+        normA.y = posA.y / posAMag
+        normA.z = posA.z / posAMag
 
-        _jointMtx[0]  = (GLfloat) rotation.m0
-        _jointMtx[1]  = (GLfloat) rotation.m4
-        _jointMtx[2]  = (GLfloat) rotation.m8
+        direction : ode.Vector3 = new ode.Vector3()
+        direction.x = posA.x + posB.x
+        direction.y = posA.y + posB.y
+        direction.z = posA.z + posB.z
+
+        relDirection : ode.Vector3 = new ode.Vector3()
+        bodyA.body.GetRelPointPos(direction.x, direction.y, direction.z, relDirection)
+        relMag : ode.Real = (ode.Real) sqrt(relDirection.x*relDirection.x +
+                                            relDirection.y*relDirection.y +
+                                            relDirection.z*relDirection.z)
+
+        relDirection.x /= relMag
+        relDirection.y /= relMag
+        relDirection.z /= relMag
+        print "%f, %f, %f", relDirection.x, relDirection.y, relDirection.z
+
+        angle : ode.Real = (ode.Real) acos(normA.x*relDirection.x +
+                                           normA.y*relDirection.y +
+                                           normA.z*relDirection.z)
+
+        axisX : ode.Real = (ode.Real) (posA.y*relDirection.z - posA.z*relDirection.y)
+        axisY : ode.Real = (ode.Real) (posA.z*relDirection.x - posA.x*relDirection.z)
+        axisZ : ode.Real = (ode.Real) (posA.x*relDirection.y - posA.y*relDirection.x)
+
+        length : ode.Real = (ode.Real) sqrt(
+            axisX * axisX + axisY * axisY + axisZ * axisZ)
+
+        normX : ode.Real = (ode.Real) axisX / length
+        normY : ode.Real = (ode.Real) axisY / length
+        normZ : ode.Real = (ode.Real) axisZ / length
+
+        print "axisX: %f", axisX
+        print "axisY: %f", axisY
+        print "axisZ: %f", axisZ
+
+        jointRotation : ode.Matrix3 = new ode.Matrix3()
+
+        jointRotation.FromAxisAndAngle(normX, normY, normZ, angle)
+
+        _jointMtx[0]  = (GLfloat) jointRotation.m0
+        _jointMtx[1]  = (GLfloat) jointRotation.m4
+        _jointMtx[2]  = (GLfloat) jointRotation.m8
         _jointMtx[3]  = (GLfloat) 0.0
-        _jointMtx[4]  = (GLfloat) rotation.m1
-        _jointMtx[5]  = (GLfloat) rotation.m5
-        _jointMtx[6]  = (GLfloat) rotation.m9
+        _jointMtx[4]  = (GLfloat) jointRotation.m1
+        _jointMtx[5]  = (GLfloat) jointRotation.m5
+        _jointMtx[6]  = (GLfloat) jointRotation.m9
         _jointMtx[7]  = (GLfloat) 0.0
-        _jointMtx[8]  = (GLfloat) rotation.m2
-        _jointMtx[9]  = (GLfloat) rotation.m6
-        _jointMtx[10] = (GLfloat) rotation.ma
+        _jointMtx[8]  = (GLfloat) jointRotation.m2
+        _jointMtx[9]  = (GLfloat) jointRotation.m6
+        _jointMtx[10] = (GLfloat) jointRotation.ma
         _jointMtx[11] = (GLfloat) 0.0
-        _jointMtx[12] = (GLfloat) (((posA.x + posB.x) / 2) - posA.x)
-        _jointMtx[13] = (GLfloat) (((posA.y + posB.y) / 2) - posA.y)
-        _jointMtx[14] = (GLfloat) (((posA.z + posB.z) / 2) - posA.z)
+        _jointMtx[12] = (GLfloat) 0.0
+        _jointMtx[13] = (GLfloat) 0.0
+        _jointMtx[14] = (GLfloat) 0.0
         _jointMtx[15] = (GLfloat) 1.0
 
         mutex.unlock()
-
         if material is null
             if default_material is null
                 default_material = new soy.materials.Material()
@@ -122,10 +160,8 @@ class soy.joints.Joint : Object
 
     def virtual mult_model_matrix( )
         var _mtx = new array of GLfloat[16]
-        posA : unowned ode.Vector3 = bodyA.body.GetPosition()
-        posB : unowned ode.Vector3 = bodyB.body.GetPosition()
-
         rotationA : unowned ode.Matrix3 = bodyA.body.GetRotation()
+        positionA : unowned ode.Vector3 = bodyA.body.GetPosition()
 
         _mtx[0]  = (GLfloat) rotationA.m0
         _mtx[1]  = (GLfloat) rotationA.m4
@@ -139,14 +175,13 @@ class soy.joints.Joint : Object
         _mtx[9]  = (GLfloat) rotationA.m6
         _mtx[10] = (GLfloat) rotationA.ma
         _mtx[11] = (GLfloat) 0.0
-        _mtx[12] = (GLfloat) posA.x
-        _mtx[13] = (GLfloat) posA.y
-        _mtx[14] = (GLfloat) posA.z
+        _mtx[12] = (GLfloat) positionA.x
+        _mtx[13] = (GLfloat) positionA.y
+        _mtx[14] = (GLfloat) positionA.z
         _mtx[15] = (GLfloat) 1.0
 
         glMultMatrixf(_mtx)
-
-        glMultMatrixf(_jointMtx)
+        //glMultMatrixf(_jointMtx)
     
     ////////////////////////////////////////////////////////////////////////
     //

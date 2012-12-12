@@ -278,11 +278,8 @@ class soy.textures.Texture : Object //soy._internals.Loadable
                     texels[dst+2] = *(data+src  )
 
         else // RGBA
-            // TODO munge the data correctly
-            // Copy to texels, row by row
-            for var y = 0 to (height-1)
-                Memory.copy(texels+(_chans*_width*y), data+(stride*y),
-                                    width*_chans)
+            // TODO this function is really just a test
+            surface2rgba(texels, _chans*_width, data, stride, 0, 0)
 
         // Calculate aspect ratio
         _aspect = (float) width / (float) height
@@ -396,20 +393,6 @@ class soy.textures.Texture : Object //soy._internals.Loadable
         self._height = (GLsizei) y
         self._updated = true
         self._mutex.unlock()
-
-
-    def static squareup(_v : int) : int
-        //
-        // This handy hack courtesy Sean Anderson, see:
-        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        //
-        _v = _v - 1
-        _v = _v | _v >> 1
-        _v = _v | _v >> 2
-        _v = _v | _v >> 4
-        _v = _v | _v >> 8
-        _v = _v | _v >> 16
-        return _v + 1
 
 
     def inline update(target : GLenum)
@@ -528,4 +511,28 @@ class soy.textures.Texture : Object //soy._internals.Loadable
 
         // Process this packet.
         // TODO
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // Static Methods
+
+    def static squareup(_v : int) : int
+        //
+        // This handy hack courtesy Sean Anderson, see:
+        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        //
+        _v = _v - 1
+        _v = _v | _v >> 1
+        _v = _v | _v >> 2
+        _v = _v | _v >> 4
+        _v = _v | _v >> 8
+        _v = _v | _v >> 16
+        return _v + 1
+
+
+    def static extern surface2rgba (dst : uchar*,
+                                    dst_stride : int,
+                                    src : uchar*,
+                                    src_stride : int,
+                                    n : int, m : int)
 

@@ -45,12 +45,21 @@ namespace soy
         Right
         
     enum Comparison
-        EQ
-        NE
-        GT
         LT
-        GE
         LE
+        NE
+        EQ
+        GT
+        GE
+
+    enum MathOperator
+        ADD
+        SUB
+        MUL
+        DIV
+        MOD
+        OR
+        AND
 
     // Returns a symbolic name of the key value specified by keyval.
     def keyval_name(keyval : uint) : string

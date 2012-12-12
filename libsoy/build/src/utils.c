@@ -33,6 +33,8 @@
 
 #define SOY_TYPE_COMPARISON (soy_comparison_get_type ())
 
+#define SOY_TYPE_MATH_OPERATOR (soy_math_operator_get_type ())
+
 #define SOY_TYPE_ITERATOR_WRAPPER (soy_iterator_wrapper_get_type ())
 #define SOY_ITERATOR_WRAPPER(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), SOY_TYPE_ITERATOR_WRAPPER, soyIteratorWrapper))
 #define SOY_ITERATOR_WRAPPER_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), SOY_TYPE_ITERATOR_WRAPPER, soyIteratorWrapperClass))
@@ -64,13 +66,23 @@ typedef enum  {
 } soyScrollDirection;
 
 typedef enum  {
-	SOY_COMPARISON_EQ,
-	SOY_COMPARISON_NE,
-	SOY_COMPARISON_GT,
 	SOY_COMPARISON_LT,
-	SOY_COMPARISON_GE,
-	SOY_COMPARISON_LE
+	SOY_COMPARISON_LE,
+	SOY_COMPARISON_NE,
+	SOY_COMPARISON_EQ,
+	SOY_COMPARISON_GT,
+	SOY_COMPARISON_GE
 } soyComparison;
+
+typedef enum  {
+	SOY_MATH_OPERATOR_ADD,
+	SOY_MATH_OPERATOR_SUB,
+	SOY_MATH_OPERATOR_MUL,
+	SOY_MATH_OPERATOR_DIV,
+	SOY_MATH_OPERATOR_MOD,
+	SOY_MATH_OPERATOR_OR,
+	SOY_MATH_OPERATOR_AND
+} soyMathOperator;
 
 struct _soyIteratorWrapper {
 	GObject parent_instance;
@@ -95,6 +107,7 @@ static GeeIterableIface* soy_iterator_wrapper_gee_iterable_parent_iface = NULL;
 GType soy_event_type_get_type (void) G_GNUC_CONST;
 GType soy_scroll_direction_get_type (void) G_GNUC_CONST;
 GType soy_comparison_get_type (void) G_GNUC_CONST;
+GType soy_math_operator_get_type (void) G_GNUC_CONST;
 gchar* soy_keyval_name (guint keyval);
 GType soy_iterator_wrapper_get_type (void) G_GNUC_CONST;
 #define SOY_ITERATOR_WRAPPER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), SOY_TYPE_ITERATOR_WRAPPER, soyIteratorWrapperPrivate))
@@ -140,12 +153,24 @@ GType soy_scroll_direction_get_type (void) {
 GType soy_comparison_get_type (void) {
 	static volatile gsize soy_comparison_type_id__volatile = 0;
 	if (g_once_init_enter (&soy_comparison_type_id__volatile)) {
-		static const GEnumValue values[] = {{SOY_COMPARISON_EQ, "SOY_COMPARISON_EQ", "eq"}, {SOY_COMPARISON_NE, "SOY_COMPARISON_NE", "ne"}, {SOY_COMPARISON_GT, "SOY_COMPARISON_GT", "gt"}, {SOY_COMPARISON_LT, "SOY_COMPARISON_LT", "lt"}, {SOY_COMPARISON_GE, "SOY_COMPARISON_GE", "ge"}, {SOY_COMPARISON_LE, "SOY_COMPARISON_LE", "le"}, {0, NULL, NULL}};
+		static const GEnumValue values[] = {{SOY_COMPARISON_LT, "SOY_COMPARISON_LT", "lt"}, {SOY_COMPARISON_LE, "SOY_COMPARISON_LE", "le"}, {SOY_COMPARISON_NE, "SOY_COMPARISON_NE", "ne"}, {SOY_COMPARISON_EQ, "SOY_COMPARISON_EQ", "eq"}, {SOY_COMPARISON_GT, "SOY_COMPARISON_GT", "gt"}, {SOY_COMPARISON_GE, "SOY_COMPARISON_GE", "ge"}, {0, NULL, NULL}};
 		GType soy_comparison_type_id;
 		soy_comparison_type_id = g_enum_register_static ("soyComparison", values);
 		g_once_init_leave (&soy_comparison_type_id__volatile, soy_comparison_type_id);
 	}
 	return soy_comparison_type_id__volatile;
+}
+
+
+GType soy_math_operator_get_type (void) {
+	static volatile gsize soy_math_operator_type_id__volatile = 0;
+	if (g_once_init_enter (&soy_math_operator_type_id__volatile)) {
+		static const GEnumValue values[] = {{SOY_MATH_OPERATOR_ADD, "SOY_MATH_OPERATOR_ADD", "add"}, {SOY_MATH_OPERATOR_SUB, "SOY_MATH_OPERATOR_SUB", "sub"}, {SOY_MATH_OPERATOR_MUL, "SOY_MATH_OPERATOR_MUL", "mul"}, {SOY_MATH_OPERATOR_DIV, "SOY_MATH_OPERATOR_DIV", "div"}, {SOY_MATH_OPERATOR_MOD, "SOY_MATH_OPERATOR_MOD", "mod"}, {SOY_MATH_OPERATOR_OR, "SOY_MATH_OPERATOR_OR", "or"}, {SOY_MATH_OPERATOR_AND, "SOY_MATH_OPERATOR_AND", "and"}, {0, NULL, NULL}};
+		GType soy_math_operator_type_id;
+		soy_math_operator_type_id = g_enum_register_static ("soyMathOperator", values);
+		g_once_init_leave (&soy_math_operator_type_id__volatile, soy_math_operator_type_id);
+	}
+	return soy_math_operator_type_id__volatile;
 }
 
 

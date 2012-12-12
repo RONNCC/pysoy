@@ -22,7 +22,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <ode.h>
+#include <soy-1/ode.h>
 #include <GLES/gl.h>
 #include <GLES/glext.h>
 #include <gee.h>

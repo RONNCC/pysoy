@@ -1,66 +1,81 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Arc Riley, 2010
+#
+#   Waf tool for orc
+#   Copyright (C) 2010,2011,2012 Copyleft Games Group
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 import os.path, shutil
 from waflib import Context, Task, Runner, Utils, Logs, Build, Node, Options, Errors
-from waflib.TaskGen import extension, after_method, before_method
+from waflib.TaskGen import extension
 from waflib.Configure import conf
 
-class orc (Task.Task) :
-    before = ("cc", "cxx")
+
+class orcc (Task.Task) :
+    ext_out = ['.s']
 
     def run (self) :
-        # target needs to be made changeable, but for now assume SSE
-        target = 'sse'
-        cmd_s = '%s --assembly --target %s ' % (self.env['ORCC'], target)
-        cmd_h = '%s --header ' % (self.env['ORCC'])
+        # generate command string for targets
+        arch_targets = ' --target '.join(self.arch_targets)
+        if arch_targets :
+            arch_targets = '--target ' + arch_targets
 
+        # generate .s file for every .orc input file
         for input in self.inputs :
             # generate assembly (.s)
-            result = self.generator.bld.exec_command(cmd_s + input)
-            if result != 0 :
-                return result
+            ret = self.exec_command('%s --assembly %s -o %s %s' % (
+                                    self.env['ORCC'],
+                                    arch_targets,
+                                    input.change_ext('.s').abspath(),
+                                    input.abspath()))
 
-            # generate header (.h)
-            result = self.generator.bld.exec_command(cmd_h + input)
-            if result != 0 :
-                return result
+            # return error code if not successful
+            if ret != 0 :
+                return ret
 
         # if it gets this far, everything went well
-        return 0      
+        return 0
 
 
 @extension('.orc')
-def orc_file(self, node):
+def orc_file (self, node) :
     orctask = getattr(self, "orctask", None)
 
     if not orctask :
         orctask = self.create_task('orcc')
         self.orctask = orctask
+        orctask.arch_targets = getattr(self, 'arch_targets', ['mmx', 'sse'])
         orctask.target = self.target
 
-        vapi_dirs = Utils.to_list(getattr(self, 'vapi_dirs', []))
-        includes =  []
-
     env = orctask.env
-
     output_nodes = []
 
     s_node = node.change_ext('.s')
     output_nodes.append(s_node)
-    self.allnodes.append(s_node)
-
-    if not 'cprogram' in self.features:
-        output_nodes.append(self.path.find_or_declare('%s.h' % self.target))
+    self.source.append(s_node)
 
     orctask.inputs.append(node)
     orctask.outputs.extend(output_nodes)
 
+
 @conf
-def check_orc(self):
+def check_orc (self) :
     orcc = self.find_program('orcc', var='ORCC', mandatory=True)
 
-def configure(self):
+def configure (self) :
 	self.load('gnu_dirs')
 	self.check_orc()
+

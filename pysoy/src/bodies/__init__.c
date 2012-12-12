@@ -63,6 +63,9 @@ PyInit_soy_bodies(void) {
     //    inherited slots from a type's base class.
     //    Return 0 on success, or return -1 and sets an exception on error.
 
+    // init Billboard type
+    PYSOY_TYPEINIT(bodies, Billboard);
+
     // init Body type
     PYSOY_TYPEINIT(bodies, Body);
 
@@ -89,11 +92,14 @@ PyInit_soy_bodies(void) {
 
     // add additional pydoc strings
     PyModule_AddStringConstant(module, "__credits__", PYSOY_CREDITS);
-    PyModule_AddStringConstant(module, "__version__", PYSOY_VERSION);
+    PyModule_AddStringConstant(module, "__version__", SOY_VERSION);
 
 
     /////////////////////////////////////////////////////////////////////////
     // add each type to the module object
+
+    // add Billboard type
+    PYSOY_TYPEADD_G(bodies, billboard, Billboard);
 
     // add Body type
     PYSOY_TYPEADD_G(bodies, body, Body);

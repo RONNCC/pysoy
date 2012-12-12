@@ -24,7 +24,7 @@
 #include <glib-object.h>
 #include <float.h>
 #include <math.h>
-#include <ode.h>
+#include <soy-1/ode.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gee.h>
@@ -187,7 +187,7 @@ struct _soybodiesLightPrivate {
 	gint __specular_size_;
 	soyatomsColor* _specular_obj;
 	gfloat _radius;
-	gfloat _size;
+	GLfloat _size;
 	soytexturesTexture* _texture;
 };
 
@@ -233,8 +233,8 @@ GType soy_controllers_controller_get_type (void) G_GNUC_CONST;
 GType soy_controllers_virtual_controller_get_type (void) G_GNUC_CONST;
 GType soy_fields_field_get_type (void) G_GNUC_CONST;
 GType soy_atoms_position_get_type (void) G_GNUC_CONST;
-soybodiesLight* soy_bodies_light_new (soyatomsPosition* position);
-soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position);
+soybodiesLight* soy_bodies_light_new (soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
+soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
 soybodiesBody* soy_bodies_body_new (soyatomsPosition* position, GObject* geom_param, gfloat geom_scalar);
 soybodiesBody* soy_bodies_body_construct (GType object_type, soyatomsPosition* position, GObject* geom_param, gfloat geom_scalar);
 static void soy_bodies_light_real_add_extra (soybodiesBody* base);
@@ -280,18 +280,32 @@ static void _vala_soy_bodies_light_get_property (GObject * object, guint propert
 static void _vala_soy_bodies_light_set_property (GObject * object, guint property_id, const GValue * value, GParamSpec * pspec);
 
 
-soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position) {
+static gpointer _g_object_ref0 (gpointer self) {
+	return self ? g_object_ref (self) : NULL;
+}
+
+
+soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position, gfloat size, soytexturesTexture* texture) {
 	soybodiesLight * self = NULL;
 	soyatomsPosition* _tmp0_;
+	soytexturesTexture* _tmp1_;
+	soytexturesTexture* _tmp2_;
+	gfloat _tmp3_;
 	_tmp0_ = position;
 	self = (soybodiesLight*) soy_bodies_body_construct (object_type, _tmp0_, NULL, 0.0f);
 	self->priv->_updated = TRUE;
+	_tmp1_ = texture;
+	_tmp2_ = _g_object_ref0 (_tmp1_);
+	_g_object_unref0 (self->priv->_texture);
+	self->priv->_texture = _tmp2_;
+	_tmp3_ = size;
+	self->priv->_size = (GLfloat) _tmp3_;
 	return self;
 }
 
 
-soybodiesLight* soy_bodies_light_new (soyatomsPosition* position) {
-	return soy_bodies_light_construct (SOY_BODIES_TYPE_LIGHT, position);
+soybodiesLight* soy_bodies_light_new (soyatomsPosition* position, gfloat size, soytexturesTexture* texture) {
+	return soy_bodies_light_construct (SOY_BODIES_TYPE_LIGHT, position, size, texture);
 }
 
 
@@ -368,7 +382,7 @@ void soy_bodies_light_on (soybodiesLight* self, GLenum id) {
 static void soy_bodies_light_real_render (soybodiesBody* base) {
 	soybodiesLight * self;
 	gboolean _tmp0_ = FALSE;
-	gfloat _tmp1_;
+	GLfloat _tmp1_;
 	gboolean _tmp3_;
 	gboolean _tmp4_;
 	gfloat* _tmp7_ = NULL;
@@ -394,7 +408,7 @@ static void soy_bodies_light_real_render (soybodiesBody* base) {
 	soytexturesTexture* _tmp19_;
 	self = (soybodiesLight*) base;
 	_tmp1_ = self->priv->_size;
-	if (_tmp1_ == ((gfloat) 0)) {
+	if (_tmp1_ == ((GLfloat) 0)) {
 		_tmp0_ = TRUE;
 	} else {
 		soytexturesTexture* _tmp2_;
@@ -640,13 +654,13 @@ static void _soy_bodies_light_update_light (soybodiesLight* self) {
 				GLfloat* _tmp35_;
 				gint _tmp35__length1;
 				gint _tmp36_;
-				gfloat _tmp37_;
+				GLfloat _tmp37_;
 				GLfloat _tmp38_;
 				GLfloat _tmp39_;
 				GLfloat* _tmp40_;
 				gint _tmp40__length1;
 				gint _tmp41_;
-				gfloat _tmp42_;
+				GLfloat _tmp42_;
 				GLfloat _tmp43_;
 				GLfloat _tmp44_;
 				GLfloat* _tmp45_;
@@ -712,14 +726,14 @@ static void _soy_bodies_light_update_light (soybodiesLight* self) {
 				_tmp36_ = i;
 				_tmp37_ = self->priv->_size;
 				_tmp38_ = x;
-				_tmp35_[_tmp36_ * 11] = (GLfloat) (_tmp37_ * _tmp38_);
+				_tmp35_[_tmp36_ * 11] = _tmp37_ * _tmp38_;
 				_tmp39_ = _tmp35_[_tmp36_ * 11];
 				_tmp40_ = vertices;
 				_tmp40__length1 = vertices_length1;
 				_tmp41_ = i;
 				_tmp42_ = self->priv->_size;
 				_tmp43_ = y;
-				_tmp40_[(_tmp41_ * 11) + 1] = (GLfloat) (_tmp42_ * _tmp43_);
+				_tmp40_[(_tmp41_ * 11) + 1] = _tmp42_ * _tmp43_;
 				_tmp44_ = _tmp40_[(_tmp41_ * 11) + 1];
 				_tmp45_ = vertices;
 				_tmp45__length1 = vertices_length1;
@@ -896,11 +910,6 @@ static void _soy_bodies_light_specular_weak (soybodiesLight* self, GObject* spec
 	g_return_if_fail (self != NULL);
 	g_return_if_fail (specular != NULL);
 	self->priv->_specular_obj = NULL;
-}
-
-
-static gpointer _g_object_ref0 (gpointer self) {
-	return self ? g_object_ref (self) : NULL;
 }
 
 
@@ -1162,10 +1171,10 @@ void soy_bodies_light_set_radius (soybodiesLight* self, gfloat value) {
 
 gfloat soy_bodies_light_get_size (soybodiesLight* self) {
 	gfloat result;
-	gfloat _tmp0_;
+	GLfloat _tmp0_;
 	g_return_val_if_fail (self != NULL, 0.0F);
 	_tmp0_ = self->priv->_size;
-	result = _tmp0_;
+	result = (gfloat) _tmp0_;
 	return result;
 }
 
@@ -1182,7 +1191,7 @@ void soy_bodies_light_set_size (soybodiesLight* self, gfloat value) {
 		g_rw_lock_writer_lock (&_tmp1_->stepLock);
 	}
 	_tmp2_ = value;
-	self->priv->_size = _tmp2_;
+	self->priv->_size = (GLfloat) _tmp2_;
 	_tmp3_ = ((soybodiesBody*) self)->scene;
 	if (_tmp3_ != NULL) {
 		soyscenesScene* _tmp4_;
@@ -1267,7 +1276,6 @@ static GObject * soy_bodies_light_constructor (GType type, guint n_construct_pro
 	self->priv->_specular_length1 = 4;
 	self->priv->__specular_size_ = self->priv->_specular_length1;
 	self->priv->_radius = 180.0f;
-	self->priv->_size = 0.5f;
 	return obj;
 }
 

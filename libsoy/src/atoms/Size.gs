@@ -39,6 +39,39 @@ class soy.atoms.Size : Object
         self._depth = depth
         self.on_set(self)
 
+    def static cmp (left : Object, right : Object, comparison : Comparison) : bool
+        if not (left isa soy.atoms.Size) or not (right isa soy.atoms.Size)
+            return false
+
+        var lefta = (soy.atoms.Size) left
+        var righta = (soy.atoms.Size) right
+
+        if (comparison is Comparison.EQ or comparison is Comparison.NE)
+            _w, _h, _d : bool
+
+            _w = lefta.width == righta.width
+            _h = lefta.height == righta.height
+            _d = lefta.depth == righta.depth
+
+            if(comparison is Comparison.EQ)
+                return (_w & _h & _d)
+            else if (comparison is Comparison.NE)
+                return not (_w & _h & _d)
+
+        var leftarea = lefta.width * lefta.height * lefta.depth
+        var rightarea = righta.width * righta.height * righta.depth
+
+        case comparison
+            when Comparison.GT
+                return leftarea > rightarea
+            when Comparison.LT
+                return leftarea < rightarea
+            when Comparison.GE
+                return leftarea >= rightarea
+            when Comparison.LE
+                return leftarea <= rightarea
+
+        return false
 
     ////////////////////////////////////////////////////////////////////////
     // Properties

@@ -83,7 +83,7 @@ PyInit_soy_joints (void) {
 
     // add extra pydoc strings
     PyModule_AddStringConstant(module, "__credits__", PYSOY_CREDITS);
-    PyModule_AddStringConstant(module, "__version__", PYSOY_VERSION);
+    PyModule_AddStringConstant(module, "__version__", SOY_VERSION);
 
     /////////////////////////////////////////////////////////////////////////
     // add each type to the module object

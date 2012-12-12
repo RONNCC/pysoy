@@ -19,13 +19,13 @@ __author__  = 'Copyleft Games Group'
 __version__ = '1.0_beta3'
 
 import os, sys
+import subprocess
 from distutils.core import setup
-from distutils.extension import Extension
+from distutils.cmd import Command
+from distutils.command import build_py
 
 # sphinx setup
 from sphinx.setup_command import BuildDoc
-cmdclass = {'build_docs': BuildDoc}
-
 
 # PySoy only supports Python 3.1+
 # Removing this test will only cause it to fail during build on Python 2.x
@@ -35,40 +35,53 @@ if sys.version_info[0] != 3 or sys.version_info[1] == 0 :
 
 from subprocess import getstatusoutput
 
+class WafClean (Command):
+    description = 'Clean using Waf'
+    user_options = []
 
-def sources (sources_dir) :
-    ''' This is a source list generator
+    def initialize_options (self) :
+        return
+        
 
-    It scans a sources directory and returns every .c file it encounters.
-    '''
-    for name in os.listdir(sources_dir) :
-        subdir = os.path.join(sources_dir, name)
-        if os.path.isdir(subdir) :
-            for source in os.listdir(subdir) :
-                if os.path.splitext(source)[1] == '.c' :
-                    yield os.path.join(subdir, source)
-        else :
-            if os.path.splitext(subdir)[1] == '.c' :
-                yield subdir
-
-    # close the generator
-    return
+    def finalize_options (self) :
+        return
 
 
-# This uses pkg-config to pull Extension config based on packages needed
-def pkgconfig (*pkglist, **kw) :
-    flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
-    pkgs = ' '.join(pkglist)
-    status, output = getstatusoutput("pkg-config --libs --cflags %s" % pkgs)
-    if status != 0 :
-        raise OSError('Package(s) Not Found\n\n%s' % output)
-    for token in output.split() :
-        if token[:2] in flag_map :
-            kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-        else :
-            kw.setdefault('extra_compile_args', []).append(token)
-    return kw
+    def run (self) :
+        subprocess.call(['./waf', 'clean'])
 
+class WafBuild (Command):
+    description = 'Build using Waf'
+    user_options = []
+
+    def initialize_options (self) :
+        return
+        
+
+    def finalize_options (self) :
+        return
+
+
+    def run (self) :
+        subprocess.call(['./waf', 'configure', 'build'])
+
+class WafInstall (Command):
+    description = 'Install using Waf'
+    user_options = []
+
+    def initialize_options (self) :
+        return
+        
+
+    def finalize_options (self) :
+        return
+
+
+    def run (self) :
+        subprocess.call(['./waf', 'install'])
+
+
+cmdclass = {'build_docs': BuildDoc, 'clean': WafClean, 'build': WafBuild, 'install': WafInstall}
 name = 'PySoy'
 
 if __name__ == '__main__' : setup(
@@ -101,17 +114,6 @@ if __name__ == '__main__' : setup(
   #
   # Extension settings
   #
-  ext_modules = [ Extension(
-      name = 'soy',
-      sources = [source for source in sources('src')],
-      define_macros = [
-          ('PYSOY_VERSION', '"%s"' % __version__),
-      ],
-      **pkgconfig(
-          'soy-1.0', 'x11', 'xi', 'xxf86vm', 'egl',
-          include_dirs = ['include'],
-          extra_compile_args = ['-g'])
-  ) ],  
   cmdclass=cmdclass,
   command_options={
         'build_docs': {

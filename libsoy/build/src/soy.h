@@ -6,7 +6,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <ode.h>
+#include <soy-1/ode.h>
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
@@ -85,6 +85,8 @@ typedef struct _soyatomsAxisPrivate soyatomsAxisPrivate;
 typedef struct _soyatomsColor soyatomsColor;
 typedef struct _soyatomsColorClass soyatomsColorClass;
 typedef struct _soyatomsColorPrivate soyatomsColorPrivate;
+
+#define SOY_TYPE_MATH_OPERATOR (soy_math_operator_get_type ())
 
 #define SOY_TYPE_COMPARISON (soy_comparison_get_type ())
 
@@ -207,6 +209,17 @@ typedef struct _soybodiesBodyPrivate soybodiesBodyPrivate;
 
 typedef struct _soyscenesScene soyscenesScene;
 typedef struct _soyscenesSceneClass soyscenesSceneClass;
+
+#define SOY_BODIES_TYPE_BILLBOARD (soy_bodies_billboard_get_type ())
+#define SOY_BODIES_BILLBOARD(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), SOY_BODIES_TYPE_BILLBOARD, soybodiesBillboard))
+#define SOY_BODIES_BILLBOARD_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), SOY_BODIES_TYPE_BILLBOARD, soybodiesBillboardClass))
+#define SOY_BODIES_IS_BILLBOARD(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), SOY_BODIES_TYPE_BILLBOARD))
+#define SOY_BODIES_IS_BILLBOARD_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), SOY_BODIES_TYPE_BILLBOARD))
+#define SOY_BODIES_BILLBOARD_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), SOY_BODIES_TYPE_BILLBOARD, soybodiesBillboardClass))
+
+typedef struct _soybodiesBillboard soybodiesBillboard;
+typedef struct _soybodiesBillboardClass soybodiesBillboardClass;
+typedef struct _soybodiesBillboardPrivate soybodiesBillboardPrivate;
 
 #define SOY_BODIES_TYPE_BOX (soy_bodies_box_get_type ())
 #define SOY_BODIES_BOX(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), SOY_BODIES_TYPE_BOX, soybodiesBox))
@@ -1042,12 +1055,22 @@ struct _soyatomsColorClass {
 };
 
 typedef enum  {
-	SOY_COMPARISON_EQ,
-	SOY_COMPARISON_NE,
-	SOY_COMPARISON_GT,
+	SOY_MATH_OPERATOR_ADD,
+	SOY_MATH_OPERATOR_SUB,
+	SOY_MATH_OPERATOR_MUL,
+	SOY_MATH_OPERATOR_DIV,
+	SOY_MATH_OPERATOR_MOD,
+	SOY_MATH_OPERATOR_OR,
+	SOY_MATH_OPERATOR_AND
+} soyMathOperator;
+
+typedef enum  {
 	SOY_COMPARISON_LT,
-	SOY_COMPARISON_GE,
-	SOY_COMPARISON_LE
+	SOY_COMPARISON_LE,
+	SOY_COMPARISON_NE,
+	SOY_COMPARISON_EQ,
+	SOY_COMPARISON_GT,
+	SOY_COMPARISON_GE
 } soyComparison;
 
 struct _soyatomsColorColormap {
@@ -1153,6 +1176,15 @@ struct _soybodiesBodyClass {
 	void (*mult_model_matrix) (soybodiesBody* self);
 	void (*render) (soybodiesBody* self);
 	void (*calcFogCoords) (soybodiesBody* self, gfloat _depth);
+};
+
+struct _soybodiesBillboard {
+	soybodiesBody parent_instance;
+	soybodiesBillboardPrivate * priv;
+};
+
+struct _soybodiesBillboardClass {
+	soybodiesBodyClass parent_class;
 };
 
 struct _soybodiesBox {
@@ -2065,19 +2097,13 @@ soyatomsColor* soy_atoms_color_new_load (const gchar* packet);
 soyatomsColor* soy_atoms_color_construct_load (GType object_type, const gchar* packet);
 soyatomsColor* soy_atoms_color_new_named (const gchar* color);
 soyatomsColor* soy_atoms_color_construct_named (GType object_type, const gchar* color);
-soyatomsColor* soy_atoms_color_new_divide (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_divide (GType object_type, soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_new_multiply (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_multiply (GType object_type, soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_new_add (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_add (GType object_type, soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_new_subtract (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_subtract (GType object_type, soyatomsColor* a, soyatomsColor* b);
+GType soy_math_operator_get_type (void) G_GNUC_CONST;
+soyatomsColor* soy_atoms_color_new_operate (soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator);
+soyatomsColor* soy_atoms_color_construct_operate (GType object_type, soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator);
 gchar* soy_atoms_color_string (soyatomsColor* self);
 gfloat* soy_atoms_color_get4f (soyatomsColor* self, int* result_length1);
+void soy_atoms_color_set4f (soyatomsColor* self, gfloat* rgba, int rgba_length1);
 guchar* soy_atoms_color_get4ub (soyatomsColor* self, int* result_length1);
-gboolean soy_atoms_color_cmp_eq (GObject* left, GObject* right);
-gboolean soy_atoms_color_cmp_ne (GObject* left, GObject* right);
 GType soy_comparison_get_type (void) G_GNUC_CONST;
 gboolean soy_atoms_color_cmp (GObject* left, GObject* right, soyComparison comparison);
 guchar soy_atoms_color_get_red (soyatomsColor* self);
@@ -2156,6 +2182,7 @@ GType soy_atoms_size_get_type (void) G_GNUC_CONST;
 soyatomsSize* soy_atoms_size_new (gfloat width, gfloat height, gfloat depth);
 soyatomsSize* soy_atoms_size_construct (GType object_type, gfloat width, gfloat height, gfloat depth);
 void soy_atoms_size_set (soyatomsSize* self, gfloat width, gfloat height, gfloat depth);
+gboolean soy_atoms_size_cmp (GObject* left, GObject* right, soyComparison comparison);
 gfloat soy_atoms_size_get_width (soyatomsSize* self);
 void soy_atoms_size_set_width (soyatomsSize* self, gfloat value);
 gfloat soy_atoms_size_get_height (soyatomsSize* self);
@@ -2187,6 +2214,13 @@ void soy_atoms_vertex_set_texcoord (soyatomsVertex* self, soyatomsPosition* valu
 soyatomsVector* soy_atoms_vertex_get_tangent (soyatomsVertex* self);
 void soy_atoms_vertex_set_tangent (soyatomsVertex* self, soyatomsVector* value);
 GType soy_scenes_scene_get_type (void) G_GNUC_CONST;
+GType soy_bodies_billboard_get_type (void) G_GNUC_CONST;
+soybodiesBillboard* soy_bodies_billboard_new (soyatomsPosition* position, soyatomsSize* size, soymaterialsMaterial* material);
+soybodiesBillboard* soy_bodies_billboard_construct (GType object_type, soyatomsPosition* position, soyatomsSize* size, soymaterialsMaterial* material);
+soyatomsSize* soy_bodies_billboard_get_size (soybodiesBillboard* self);
+void soy_bodies_billboard_set_size (soybodiesBillboard* self, soyatomsSize* value);
+soymaterialsMaterial* soy_bodies_billboard_get_material (soybodiesBillboard* self);
+void soy_bodies_billboard_set_material (soybodiesBillboard* self, soymaterialsMaterial* value);
 soybodiesBody* soy_bodies_body_new (soyatomsPosition* position, GObject* geom_param, gfloat geom_scalar);
 soybodiesBody* soy_bodies_body_construct (GType object_type, soyatomsPosition* position, GObject* geom_param, gfloat geom_scalar);
 void soy_bodies_body_create_geom (soybodiesBody* self, GObject* geom_param, gfloat geom_scalar);
@@ -2232,8 +2266,9 @@ void soy_bodies_camera_project (soybodiesCamera* self, GLfloat aspect);
 gfloat soy_bodies_camera_get_lens (soybodiesCamera* self);
 void soy_bodies_camera_set_lens (soybodiesCamera* self, gfloat value);
 GType soy_bodies_light_get_type (void) G_GNUC_CONST;
-soybodiesLight* soy_bodies_light_new (soyatomsPosition* position);
-soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position);
+GType soy_textures_texture_get_type (void) G_GNUC_CONST;
+soybodiesLight* soy_bodies_light_new (soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
+soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
 void soy_bodies_light_off (soybodiesLight* self, GLenum id);
 void soy_bodies_light_on (soybodiesLight* self, GLenum id);
 soyatomsColor* soy_bodies_light_get_ambient (soybodiesLight* self);
@@ -2246,7 +2281,6 @@ gfloat soy_bodies_light_get_radius (soybodiesLight* self);
 void soy_bodies_light_set_radius (soybodiesLight* self, gfloat value);
 gfloat soy_bodies_light_get_size (soybodiesLight* self);
 void soy_bodies_light_set_size (soybodiesLight* self, gfloat value);
-GType soy_textures_texture_get_type (void) G_GNUC_CONST;
 soytexturesTexture* soy_bodies_light_get_texture (soybodiesLight* self);
 void soy_bodies_light_set_texture (soybodiesLight* self, soytexturesTexture* value);
 soybodiesMesh* soy_bodies_mesh_new (soyatomsPosition* position);
@@ -2760,11 +2794,12 @@ soytexturesTexture* soy_textures_texture_construct_from_svg (GType object_type, 
 soyatomsColor* soy_textures_texture_get (soytexturesTexture* self, gint index);
 void soy_textures_texture_set (soytexturesTexture* self, gint index, GObject* value);
 void soy_textures_texture_resize (soytexturesTexture* self, gint c, gint x, gint y);
-gint soy_textures_texture_squareup (gint _v);
 void soy_textures_texture_update (soytexturesTexture* self, GLenum target);
 void soy_textures_texture_enable (soytexturesTexture* self);
 void soy_textures_texture_disable (soytexturesTexture* self);
 void soy_textures_texture_load (soytexturesTexture* self, void* _vdata, gint _size);
+gint soy_textures_texture_squareup (gint _v);
+void soy_textures_texture_surface2rgba (guchar* dst, gint dst_stride, guchar* src, gint src_stride, gint n, gint m);
 GLfloat* soy_textures_texture_get_animate (soytexturesTexture* self, int* result_length1);
 gfloat soy_textures_texture_get_aspect (soytexturesTexture* self);
 gint soy_textures_texture_get_channels (soytexturesTexture* self);

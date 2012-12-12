@@ -51,10 +51,12 @@ typedef struct _soyatomsColorPrivate soyatomsColorPrivate;
 typedef struct _soyatomsColorColormap soyatomsColorColormap;
 typedef struct _soyatomsColorColormapClass soyatomsColorColormapClass;
 
+#define SOY_TYPE_MATH_OPERATOR (soy_math_operator_get_type ())
+
 #define SOY_TYPE_COMPARISON (soy_comparison_get_type ())
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
-#define _g_free0(var) (var = (g_free (var), NULL))
 typedef struct _soyatomsColorColormapPrivate soyatomsColorColormapPrivate;
+#define _g_free0(var) (var = (g_free (var), NULL))
 
 struct _soyatomsColor {
 	GObject parent_instance;
@@ -73,12 +75,22 @@ struct _soyatomsColorPrivate {
 };
 
 typedef enum  {
-	SOY_COMPARISON_EQ,
-	SOY_COMPARISON_NE,
-	SOY_COMPARISON_GT,
+	SOY_MATH_OPERATOR_ADD,
+	SOY_MATH_OPERATOR_SUB,
+	SOY_MATH_OPERATOR_MUL,
+	SOY_MATH_OPERATOR_DIV,
+	SOY_MATH_OPERATOR_MOD,
+	SOY_MATH_OPERATOR_OR,
+	SOY_MATH_OPERATOR_AND
+} soyMathOperator;
+
+typedef enum  {
 	SOY_COMPARISON_LT,
-	SOY_COMPARISON_GE,
-	SOY_COMPARISON_LE
+	SOY_COMPARISON_LE,
+	SOY_COMPARISON_NE,
+	SOY_COMPARISON_EQ,
+	SOY_COMPARISON_GT,
+	SOY_COMPARISON_GE
 } soyComparison;
 
 struct _soyatomsColorColormap {
@@ -123,26 +135,20 @@ soyatomsColor* soy_atoms_color_construct_load (GType object_type, const gchar* p
 soyatomsColor* soy_atoms_color_new_named (const gchar* color);
 soyatomsColor* soy_atoms_color_construct_named (GType object_type, const gchar* color);
 void soy_atoms_color_set_hex (soyatomsColor* self, const gchar* value);
-soyatomsColor* soy_atoms_color_new_divide (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_divide (GType object_type, soyatomsColor* a, soyatomsColor* b);
-guchar soy_atoms_color_get_blue (soyatomsColor* self);
-soyatomsColor* soy_atoms_color_new_multiply (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_multiply (GType object_type, soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_new_add (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_add (GType object_type, soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_new_subtract (soyatomsColor* a, soyatomsColor* b);
-soyatomsColor* soy_atoms_color_construct_subtract (GType object_type, soyatomsColor* a, soyatomsColor* b);
-gchar* soy_atoms_color_string (soyatomsColor* self);
+GType soy_math_operator_get_type (void) G_GNUC_CONST;
+soyatomsColor* soy_atoms_color_new_operate (soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator);
+soyatomsColor* soy_atoms_color_construct_operate (GType object_type, soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator);
 gfloat* soy_atoms_color_get4f (soyatomsColor* self, int* result_length1);
+void soy_atoms_color_set4f (soyatomsColor* self, gfloat* rgba, int rgba_length1);
+gchar* soy_atoms_color_string (soyatomsColor* self);
 guchar* soy_atoms_color_get4ub (soyatomsColor* self, int* result_length1);
-gboolean soy_atoms_color_cmp_eq (GObject* left, GObject* right);
-gboolean soy_atoms_color_cmp_ne (GObject* left, GObject* right);
 GType soy_comparison_get_type (void) G_GNUC_CONST;
 gboolean soy_atoms_color_cmp (GObject* left, GObject* right, soyComparison comparison);
 guchar soy_atoms_color_get_red (soyatomsColor* self);
 void soy_atoms_color_set_red (soyatomsColor* self, guchar value);
 guchar soy_atoms_color_get_green (soyatomsColor* self);
 void soy_atoms_color_set_green (soyatomsColor* self, guchar value);
+guchar soy_atoms_color_get_blue (soyatomsColor* self);
 void soy_atoms_color_set_blue (soyatomsColor* self, guchar value);
 guchar soy_atoms_color_get_luma (soyatomsColor* self);
 void soy_atoms_color_set_luma (soyatomsColor* self, guchar value);
@@ -335,331 +341,461 @@ soyatomsColor* soy_atoms_color_new_named (const gchar* color) {
 }
 
 
-soyatomsColor* soy_atoms_color_construct_divide (GType object_type, soyatomsColor* a, soyatomsColor* b) {
+soyatomsColor* soy_atoms_color_construct_operate (GType object_type, soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator) {
 	soyatomsColor * self = NULL;
-	guint _r = 0U;
-	guint _g = 0U;
-	guint _b = 0U;
 	soyatomsColor* _tmp0_;
-	guchar _tmp1_;
-	soyatomsColor* _tmp7_;
-	guchar _tmp8_;
-	soyatomsColor* _tmp14_;
-	guchar _tmp15_;
-	guint _tmp22_;
-	guint _tmp24_;
-	guint _tmp26_;
-	g_return_val_if_fail (a != NULL, NULL);
-	g_return_val_if_fail (b != NULL, NULL);
-	self = (soyatomsColor*) g_object_new (object_type, NULL);
-	_tmp0_ = b;
-	_tmp1_ = _tmp0_->priv->_red;
-	if (((gint) _tmp1_) == 0) {
-		_r = (guint) 255;
-	} else {
-		soyatomsColor* _tmp2_;
-		guchar _tmp3_;
-		soyatomsColor* _tmp4_;
-		guchar _tmp5_;
-		gfloat _tmp6_ = 0.0F;
-		_tmp2_ = a;
-		_tmp3_ = _tmp2_->priv->_red;
-		_tmp4_ = b;
-		_tmp5_ = _tmp4_->priv->_red;
-		_tmp6_ = roundf (((_tmp3_ / 256.0f) / (_tmp5_ / 256.0f)) * 256);
-		_r = (guint) _tmp6_;
-	}
-	_tmp7_ = b;
-	_tmp8_ = _tmp7_->priv->_green;
-	if (((gint) _tmp8_) == 0) {
-		_g = (guint) 255;
-	} else {
-		soyatomsColor* _tmp9_;
-		guchar _tmp10_;
-		soyatomsColor* _tmp11_;
-		guchar _tmp12_;
-		gfloat _tmp13_ = 0.0F;
-		_tmp9_ = a;
-		_tmp10_ = _tmp9_->priv->_green;
-		_tmp11_ = b;
-		_tmp12_ = _tmp11_->priv->_green;
-		_tmp13_ = roundf (((_tmp10_ / 256.0f) / (_tmp12_ / 256.0f)) * 256);
-		_g = (guint) _tmp13_;
-	}
-	_tmp14_ = b;
-	_tmp15_ = _tmp14_->priv->_blue;
-	if (((gint) _tmp15_) == 0) {
-		_b = (guint) 255;
-	} else {
-		soyatomsColor* _tmp16_;
-		guchar _tmp17_;
-		soyatomsColor* _tmp18_;
-		guchar _tmp19_;
-		guchar _tmp20_;
-		gfloat _tmp21_ = 0.0F;
-		_tmp16_ = a;
-		_tmp17_ = _tmp16_->priv->_blue;
-		_tmp18_ = b;
-		_tmp19_ = soy_atoms_color_get_blue (_tmp18_);
-		_tmp20_ = _tmp19_;
-		_tmp21_ = roundf (((_tmp17_ / 256.0f) / (_tmp20_ / 256.0f)) * 256);
-		_b = (guint) _tmp21_;
-	}
-	_tmp22_ = _r;
-	if (_tmp22_ <= ((guint) 255)) {
-		guint _tmp23_;
-		_tmp23_ = _r;
-		self->priv->_red = (guchar) _tmp23_;
-	} else {
-		self->priv->_red = (guchar) 255;
-	}
-	_tmp24_ = _g;
-	if (_tmp24_ <= ((guint) 255)) {
-		guint _tmp25_;
-		_tmp25_ = _g;
-		self->priv->_green = (guchar) _tmp25_;
-	} else {
-		self->priv->_green = (guchar) 255;
-	}
-	_tmp26_ = _b;
-	if (_tmp26_ <= ((guint) 255)) {
-		guint _tmp27_;
-		_tmp27_ = _b;
-		self->priv->_blue = (guchar) _tmp27_;
-	} else {
-		self->priv->_blue = (guchar) 255;
-	}
-	self->priv->_alpha = (guchar) 255;
-	return self;
-}
-
-
-soyatomsColor* soy_atoms_color_new_divide (soyatomsColor* a, soyatomsColor* b) {
-	return soy_atoms_color_construct_divide (SOY_ATOMS_TYPE_COLOR, a, b);
-}
-
-
-soyatomsColor* soy_atoms_color_construct_multiply (GType object_type, soyatomsColor* a, soyatomsColor* b) {
-	soyatomsColor * self = NULL;
-	guint _r = 0U;
-	guint _g = 0U;
-	guint _b = 0U;
-	soyatomsColor* _tmp0_;
-	guchar _tmp1_;
-	soyatomsColor* _tmp2_;
-	guchar _tmp3_;
-	gfloat _tmp4_ = 0.0F;
+	gint _tmp1_ = 0;
+	gfloat* _tmp2_ = NULL;
+	gfloat* left_f;
+	gint left_f_length1;
+	gint _left_f_size_;
+	gfloat* _tmp3_ = NULL;
+	gfloat* right_f;
+	gint right_f_length1;
+	gint _right_f_size_;
+	gfloat* _tmp4_ = NULL;
+	gfloat* rgb;
+	gint rgb_length1;
+	gint _rgb_size_;
 	soyatomsColor* _tmp5_;
-	guchar _tmp6_;
-	soyatomsColor* _tmp7_;
-	guchar _tmp8_;
-	gfloat _tmp9_ = 0.0F;
-	soyatomsColor* _tmp10_;
-	guchar _tmp11_;
-	soyatomsColor* _tmp12_;
-	guchar _tmp13_;
-	guchar _tmp14_;
-	gfloat _tmp15_ = 0.0F;
-	guint _tmp16_;
-	guint _tmp18_;
-	guint _tmp20_;
-	g_return_val_if_fail (a != NULL, NULL);
-	g_return_val_if_fail (b != NULL, NULL);
+	gfloat* _tmp119_;
+	gint _tmp119__length1;
+	g_return_val_if_fail (left != NULL, NULL);
 	self = (soyatomsColor*) g_object_new (object_type, NULL);
-	_tmp0_ = a;
-	_tmp1_ = _tmp0_->priv->_red;
-	_tmp2_ = b;
-	_tmp3_ = _tmp2_->priv->_red;
-	_tmp4_ = roundf (((_tmp1_ / 256.0f) * (_tmp3_ / 256.0f)) * 256);
-	_r = (guint) _tmp4_;
-	_tmp5_ = a;
-	_tmp6_ = _tmp5_->priv->_green;
-	_tmp7_ = b;
-	_tmp8_ = _tmp7_->priv->_green;
-	_tmp9_ = roundf (((_tmp6_ / 256.0f) * (_tmp8_ / 256.0f)) * 256);
-	_g = (guint) _tmp9_;
-	_tmp10_ = a;
-	_tmp11_ = _tmp10_->priv->_blue;
-	_tmp12_ = b;
-	_tmp13_ = soy_atoms_color_get_blue (_tmp12_);
-	_tmp14_ = _tmp13_;
-	_tmp15_ = roundf (((_tmp11_ / 256.0f) * (_tmp14_ / 256.0f)) * 256);
-	_b = (guint) _tmp15_;
-	_tmp16_ = _r;
-	if (_tmp16_ <= ((guint) 255)) {
-		guint _tmp17_;
-		_tmp17_ = _r;
-		self->priv->_red = (guchar) _tmp17_;
+	_tmp0_ = left;
+	_tmp2_ = soy_atoms_color_get4f (_tmp0_, &_tmp1_);
+	left_f = _tmp2_;
+	left_f_length1 = _tmp1_;
+	_left_f_size_ = left_f_length1;
+	_tmp3_ = g_new0 (gfloat, 4);
+	_tmp3_[0] = 0.0f;
+	_tmp3_[1] = 0.0f;
+	_tmp3_[2] = 0.0f;
+	_tmp3_[3] = 1.0f;
+	right_f = _tmp3_;
+	right_f_length1 = 4;
+	_right_f_size_ = right_f_length1;
+	_tmp4_ = g_new0 (gfloat, 4);
+	_tmp4_[0] = 0.0f;
+	_tmp4_[1] = 0.0f;
+	_tmp4_[2] = 0.0f;
+	_tmp4_[3] = 1.0f;
+	rgb = _tmp4_;
+	rgb_length1 = 4;
+	_rgb_size_ = rgb_length1;
+	_tmp5_ = right_color;
+	if (_tmp5_ != NULL) {
+		soyatomsColor* _tmp6_;
+		gint _tmp7_ = 0;
+		gfloat* _tmp8_ = NULL;
+		_tmp6_ = right_color;
+		_tmp8_ = soy_atoms_color_get4f (_tmp6_, &_tmp7_);
+		right_f = (g_free (right_f), NULL);
+		right_f = _tmp8_;
+		right_f_length1 = _tmp7_;
+		_right_f_size_ = right_f_length1;
 	} else {
-		self->priv->_red = (guchar) 255;
+		gfloat c = 0.0F;
+		gboolean _tmp9_ = FALSE;
+		soyMathOperator _tmp10_;
+		gboolean _tmp12_;
+		gfloat _tmp15_;
+		gfloat _tmp16_;
+		gfloat _tmp17_;
+		gfloat* _tmp18_ = NULL;
+		_tmp10_ = operator;
+		if (_tmp10_ == SOY_MATH_OPERATOR_MUL) {
+			_tmp9_ = TRUE;
+		} else {
+			soyMathOperator _tmp11_;
+			_tmp11_ = operator;
+			_tmp9_ = _tmp11_ == SOY_MATH_OPERATOR_DIV;
+		}
+		_tmp12_ = _tmp9_;
+		if (_tmp12_) {
+			gfloat _tmp13_;
+			_tmp13_ = right_float;
+			c = _tmp13_;
+		} else {
+			gfloat _tmp14_;
+			_tmp14_ = right_float;
+			c = _tmp14_ / 255.0f;
+		}
+		_tmp15_ = c;
+		_tmp16_ = c;
+		_tmp17_ = c;
+		_tmp18_ = g_new0 (gfloat, 4);
+		_tmp18_[0] = _tmp15_;
+		_tmp18_[1] = _tmp16_;
+		_tmp18_[2] = _tmp17_;
+		_tmp18_[3] = 1.0f;
+		right_f = (g_free (right_f), NULL);
+		right_f = _tmp18_;
+		right_f_length1 = 4;
+		_right_f_size_ = right_f_length1;
 	}
-	_tmp18_ = _g;
-	if (_tmp18_ <= ((guint) 255)) {
-		guint _tmp19_;
-		_tmp19_ = _g;
-		self->priv->_green = (guchar) _tmp19_;
-	} else {
-		self->priv->_green = (guchar) 255;
+	{
+		gint i;
+		i = 0;
+		{
+			gboolean _tmp19_;
+			_tmp19_ = TRUE;
+			while (TRUE) {
+				gboolean _tmp20_;
+				soyMathOperator _tmp22_;
+				_tmp20_ = _tmp19_;
+				if (!_tmp20_) {
+					gint _tmp21_;
+					_tmp21_ = i;
+					i = _tmp21_ + 1;
+				}
+				_tmp19_ = FALSE;
+				if (!(i <= 2)) {
+					break;
+				}
+				_tmp22_ = operator;
+				switch (_tmp22_) {
+					case SOY_MATH_OPERATOR_ADD:
+					{
+						{
+							gfloat* _tmp23_;
+							gint _tmp23__length1;
+							gint _tmp24_;
+							gfloat* _tmp25_;
+							gint _tmp25__length1;
+							gint _tmp26_;
+							gfloat _tmp27_;
+							gfloat* _tmp28_;
+							gint _tmp28__length1;
+							gint _tmp29_;
+							gfloat _tmp30_;
+							gfloat _tmp31_;
+							_tmp23_ = rgb;
+							_tmp23__length1 = rgb_length1;
+							_tmp24_ = i;
+							_tmp25_ = left_f;
+							_tmp25__length1 = left_f_length1;
+							_tmp26_ = i;
+							_tmp27_ = _tmp25_[_tmp26_];
+							_tmp28_ = right_f;
+							_tmp28__length1 = right_f_length1;
+							_tmp29_ = i;
+							_tmp30_ = _tmp28_[_tmp29_];
+							_tmp23_[_tmp24_] = _tmp27_ + _tmp30_;
+							_tmp31_ = _tmp23_[_tmp24_];
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_SUB:
+					{
+						{
+							gfloat* _tmp32_;
+							gint _tmp32__length1;
+							gint _tmp33_;
+							gfloat* _tmp34_;
+							gint _tmp34__length1;
+							gint _tmp35_;
+							gfloat _tmp36_;
+							gfloat* _tmp37_;
+							gint _tmp37__length1;
+							gint _tmp38_;
+							gfloat _tmp39_;
+							gfloat _tmp40_;
+							_tmp32_ = rgb;
+							_tmp32__length1 = rgb_length1;
+							_tmp33_ = i;
+							_tmp34_ = left_f;
+							_tmp34__length1 = left_f_length1;
+							_tmp35_ = i;
+							_tmp36_ = _tmp34_[_tmp35_];
+							_tmp37_ = right_f;
+							_tmp37__length1 = right_f_length1;
+							_tmp38_ = i;
+							_tmp39_ = _tmp37_[_tmp38_];
+							_tmp32_[_tmp33_] = _tmp36_ - _tmp39_;
+							_tmp40_ = _tmp32_[_tmp33_];
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_MUL:
+					{
+						{
+							gfloat* _tmp41_;
+							gint _tmp41__length1;
+							gint _tmp42_;
+							gfloat* _tmp43_;
+							gint _tmp43__length1;
+							gint _tmp44_;
+							gfloat _tmp45_;
+							gfloat* _tmp46_;
+							gint _tmp46__length1;
+							gint _tmp47_;
+							gfloat _tmp48_;
+							gfloat _tmp49_;
+							_tmp41_ = rgb;
+							_tmp41__length1 = rgb_length1;
+							_tmp42_ = i;
+							_tmp43_ = left_f;
+							_tmp43__length1 = left_f_length1;
+							_tmp44_ = i;
+							_tmp45_ = _tmp43_[_tmp44_];
+							_tmp46_ = right_f;
+							_tmp46__length1 = right_f_length1;
+							_tmp47_ = i;
+							_tmp48_ = _tmp46_[_tmp47_];
+							_tmp41_[_tmp42_] = _tmp45_ * _tmp48_;
+							_tmp49_ = _tmp41_[_tmp42_];
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_DIV:
+					{
+						{
+							gfloat* _tmp50_;
+							gint _tmp50__length1;
+							gint _tmp51_;
+							gfloat _tmp52_;
+							_tmp50_ = right_f;
+							_tmp50__length1 = right_f_length1;
+							_tmp51_ = i;
+							_tmp52_ = _tmp50_[_tmp51_];
+							if (_tmp52_ == 0.0f) {
+								gfloat* _tmp53_;
+								gint _tmp53__length1;
+								gint _tmp54_;
+								gfloat _tmp55_;
+								_tmp53_ = rgb;
+								_tmp53__length1 = rgb_length1;
+								_tmp54_ = i;
+								_tmp53_[_tmp54_] = 1.0f;
+								_tmp55_ = _tmp53_[_tmp54_];
+							} else {
+								gfloat* _tmp56_;
+								gint _tmp56__length1;
+								gint _tmp57_;
+								gfloat* _tmp58_;
+								gint _tmp58__length1;
+								gint _tmp59_;
+								gfloat _tmp60_;
+								gfloat* _tmp61_;
+								gint _tmp61__length1;
+								gint _tmp62_;
+								gfloat _tmp63_;
+								gfloat _tmp64_;
+								_tmp56_ = rgb;
+								_tmp56__length1 = rgb_length1;
+								_tmp57_ = i;
+								_tmp58_ = left_f;
+								_tmp58__length1 = left_f_length1;
+								_tmp59_ = i;
+								_tmp60_ = _tmp58_[_tmp59_];
+								_tmp61_ = right_f;
+								_tmp61__length1 = right_f_length1;
+								_tmp62_ = i;
+								_tmp63_ = _tmp61_[_tmp62_];
+								_tmp56_[_tmp57_] = _tmp60_ / _tmp63_;
+								_tmp64_ = _tmp56_[_tmp57_];
+							}
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_MOD:
+					{
+						{
+							gboolean _tmp65_ = FALSE;
+							soyatomsColor* _tmp66_;
+							gboolean _tmp71_;
+							_tmp66_ = right_color;
+							if (_tmp66_ != NULL) {
+								_tmp65_ = TRUE;
+							} else {
+								gboolean _tmp67_ = FALSE;
+								gfloat _tmp68_;
+								gboolean _tmp70_;
+								_tmp68_ = right_float;
+								if (_tmp68_ <= 1.0f) {
+									gfloat _tmp69_;
+									_tmp69_ = right_float;
+									_tmp67_ = _tmp69_ >= 0.0f;
+								} else {
+									_tmp67_ = FALSE;
+								}
+								_tmp70_ = _tmp67_;
+								_tmp65_ = _tmp70_;
+							}
+							_tmp71_ = _tmp65_;
+							if (_tmp71_) {
+								gfloat* _tmp72_;
+								gint _tmp72__length1;
+								gint _tmp73_;
+								gfloat _tmp74_;
+								_tmp72_ = right_f;
+								_tmp72__length1 = right_f_length1;
+								_tmp73_ = i;
+								_tmp74_ = _tmp72_[_tmp73_];
+								if (_tmp74_ == 0.0f) {
+									gfloat* _tmp75_;
+									gint _tmp75__length1;
+									gint _tmp76_;
+									gfloat _tmp77_;
+									_tmp75_ = rgb;
+									_tmp75__length1 = rgb_length1;
+									_tmp76_ = i;
+									_tmp75_[_tmp76_] = 1.0f;
+									_tmp77_ = _tmp75_[_tmp76_];
+								} else {
+									gfloat* _tmp78_;
+									gint _tmp78__length1;
+									gint _tmp79_;
+									gfloat* _tmp80_;
+									gint _tmp80__length1;
+									gint _tmp81_;
+									gfloat _tmp82_;
+									gfloat* _tmp83_;
+									gint _tmp83__length1;
+									gint _tmp84_;
+									gfloat _tmp85_;
+									gfloat _tmp86_;
+									_tmp78_ = rgb;
+									_tmp78__length1 = rgb_length1;
+									_tmp79_ = i;
+									_tmp80_ = left_f;
+									_tmp80__length1 = left_f_length1;
+									_tmp81_ = i;
+									_tmp82_ = _tmp80_[_tmp81_];
+									_tmp83_ = right_f;
+									_tmp83__length1 = right_f_length1;
+									_tmp84_ = i;
+									_tmp85_ = _tmp83_[_tmp84_];
+									_tmp78_[_tmp79_] = fmodf (_tmp82_, _tmp85_);
+									_tmp86_ = _tmp78_[_tmp79_];
+								}
+							} else {
+								gfloat* _tmp87_;
+								gint _tmp87__length1;
+								gint _tmp88_;
+								gfloat* _tmp89_;
+								gint _tmp89__length1;
+								gint _tmp90_;
+								gfloat _tmp91_;
+								gfloat _tmp92_;
+								_tmp87_ = rgb;
+								_tmp87__length1 = rgb_length1;
+								_tmp88_ = i;
+								_tmp89_ = left_f;
+								_tmp89__length1 = left_f_length1;
+								_tmp90_ = i;
+								_tmp91_ = _tmp89_[_tmp90_];
+								_tmp87_[_tmp88_] = _tmp91_;
+								_tmp92_ = _tmp87_[_tmp88_];
+							}
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_AND:
+					{
+						{
+							gfloat* _tmp93_;
+							gint _tmp93__length1;
+							gint _tmp94_;
+							gfloat _tmp95_;
+							gfloat _tmp96_ = 0.0F;
+							guchar l;
+							gfloat* _tmp97_;
+							gint _tmp97__length1;
+							gint _tmp98_;
+							gfloat _tmp99_;
+							gfloat _tmp100_ = 0.0F;
+							guchar r;
+							gfloat* _tmp101_;
+							gint _tmp101__length1;
+							gint _tmp102_;
+							guchar _tmp103_;
+							guchar _tmp104_;
+							gfloat _tmp105_;
+							_tmp93_ = left_f;
+							_tmp93__length1 = left_f_length1;
+							_tmp94_ = i;
+							_tmp95_ = _tmp93_[_tmp94_];
+							_tmp96_ = roundf (_tmp95_ * 255.0f);
+							l = (guchar) _tmp96_;
+							_tmp97_ = right_f;
+							_tmp97__length1 = right_f_length1;
+							_tmp98_ = i;
+							_tmp99_ = _tmp97_[_tmp98_];
+							_tmp100_ = roundf (_tmp99_ * 255.0f);
+							r = (guchar) _tmp100_;
+							_tmp101_ = rgb;
+							_tmp101__length1 = rgb_length1;
+							_tmp102_ = i;
+							_tmp103_ = l;
+							_tmp104_ = r;
+							_tmp101_[_tmp102_] = ((gfloat) (_tmp103_ & _tmp104_)) / 255.0f;
+							_tmp105_ = _tmp101_[_tmp102_];
+						}
+						break;
+					}
+					case SOY_MATH_OPERATOR_OR:
+					{
+						{
+							gfloat* _tmp106_;
+							gint _tmp106__length1;
+							gint _tmp107_;
+							gfloat _tmp108_;
+							gfloat _tmp109_ = 0.0F;
+							guchar l;
+							gfloat* _tmp110_;
+							gint _tmp110__length1;
+							gint _tmp111_;
+							gfloat _tmp112_;
+							gfloat _tmp113_ = 0.0F;
+							guchar r;
+							gfloat* _tmp114_;
+							gint _tmp114__length1;
+							gint _tmp115_;
+							guchar _tmp116_;
+							guchar _tmp117_;
+							gfloat _tmp118_;
+							_tmp106_ = left_f;
+							_tmp106__length1 = left_f_length1;
+							_tmp107_ = i;
+							_tmp108_ = _tmp106_[_tmp107_];
+							_tmp109_ = roundf (_tmp108_ * 255.0f);
+							l = (guchar) _tmp109_;
+							_tmp110_ = right_f;
+							_tmp110__length1 = right_f_length1;
+							_tmp111_ = i;
+							_tmp112_ = _tmp110_[_tmp111_];
+							_tmp113_ = roundf (_tmp112_ * 255.0f);
+							r = (guchar) _tmp113_;
+							_tmp114_ = rgb;
+							_tmp114__length1 = rgb_length1;
+							_tmp115_ = i;
+							_tmp116_ = l;
+							_tmp117_ = r;
+							_tmp114_[_tmp115_] = ((gfloat) (_tmp116_ | _tmp117_)) / 255.0f;
+							_tmp118_ = _tmp114_[_tmp115_];
+						}
+						break;
+					}
+					default:
+					break;
+				}
+			}
+		}
 	}
-	_tmp20_ = _b;
-	if (_tmp20_ <= ((guint) 255)) {
-		guint _tmp21_;
-		_tmp21_ = _b;
-		self->priv->_blue = (guchar) _tmp21_;
-	} else {
-		self->priv->_blue = (guchar) 255;
-	}
-	self->priv->_alpha = (guchar) 255;
+	_tmp119_ = rgb;
+	_tmp119__length1 = rgb_length1;
+	soy_atoms_color_set4f (self, _tmp119_, _tmp119__length1);
+	rgb = (g_free (rgb), NULL);
+	right_f = (g_free (right_f), NULL);
+	left_f = (g_free (left_f), NULL);
 	return self;
 }
 
 
-soyatomsColor* soy_atoms_color_new_multiply (soyatomsColor* a, soyatomsColor* b) {
-	return soy_atoms_color_construct_multiply (SOY_ATOMS_TYPE_COLOR, a, b);
-}
-
-
-soyatomsColor* soy_atoms_color_construct_add (GType object_type, soyatomsColor* a, soyatomsColor* b) {
-	soyatomsColor * self = NULL;
-	guint _r = 0U;
-	guint _g = 0U;
-	guint _b = 0U;
-	soyatomsColor* _tmp0_;
-	guchar _tmp1_;
-	soyatomsColor* _tmp2_;
-	guchar _tmp3_;
-	soyatomsColor* _tmp4_;
-	guchar _tmp5_;
-	soyatomsColor* _tmp6_;
-	guchar _tmp7_;
-	soyatomsColor* _tmp8_;
-	guchar _tmp9_;
-	soyatomsColor* _tmp10_;
-	guchar _tmp11_;
-	guint _tmp12_;
-	guint _tmp14_;
-	guint _tmp16_;
-	g_return_val_if_fail (a != NULL, NULL);
-	g_return_val_if_fail (b != NULL, NULL);
-	self = (soyatomsColor*) g_object_new (object_type, NULL);
-	_tmp0_ = a;
-	_tmp1_ = _tmp0_->priv->_red;
-	_tmp2_ = b;
-	_tmp3_ = _tmp2_->priv->_red;
-	_r = (guint) (_tmp1_ + _tmp3_);
-	_tmp4_ = a;
-	_tmp5_ = _tmp4_->priv->_green;
-	_tmp6_ = b;
-	_tmp7_ = _tmp6_->priv->_green;
-	_g = (guint) (_tmp5_ + _tmp7_);
-	_tmp8_ = a;
-	_tmp9_ = _tmp8_->priv->_blue;
-	_tmp10_ = b;
-	_tmp11_ = _tmp10_->priv->_blue;
-	_b = (guint) (_tmp9_ + _tmp11_);
-	_tmp12_ = _r;
-	if (_tmp12_ <= ((guint) 255)) {
-		guint _tmp13_;
-		_tmp13_ = _r;
-		self->priv->_red = (guchar) _tmp13_;
-	} else {
-		self->priv->_red = (guchar) 255;
-	}
-	_tmp14_ = _g;
-	if (_tmp14_ <= ((guint) 255)) {
-		guint _tmp15_;
-		_tmp15_ = _g;
-		self->priv->_green = (guchar) _tmp15_;
-	} else {
-		self->priv->_green = (guchar) 255;
-	}
-	_tmp16_ = _b;
-	if (_tmp16_ <= ((guint) 255)) {
-		guint _tmp17_;
-		_tmp17_ = _b;
-		self->priv->_blue = (guchar) _tmp17_;
-	} else {
-		self->priv->_blue = (guchar) 255;
-	}
-	self->priv->_alpha = (guchar) 255;
-	return self;
-}
-
-
-soyatomsColor* soy_atoms_color_new_add (soyatomsColor* a, soyatomsColor* b) {
-	return soy_atoms_color_construct_add (SOY_ATOMS_TYPE_COLOR, a, b);
-}
-
-
-soyatomsColor* soy_atoms_color_construct_subtract (GType object_type, soyatomsColor* a, soyatomsColor* b) {
-	soyatomsColor * self = NULL;
-	gint _r = 0;
-	gint _g = 0;
-	gint _b = 0;
-	soyatomsColor* _tmp0_;
-	guchar _tmp1_;
-	soyatomsColor* _tmp2_;
-	guchar _tmp3_;
-	soyatomsColor* _tmp4_;
-	guchar _tmp5_;
-	soyatomsColor* _tmp6_;
-	guchar _tmp7_;
-	soyatomsColor* _tmp8_;
-	guchar _tmp9_;
-	soyatomsColor* _tmp10_;
-	guchar _tmp11_;
-	gint _tmp12_;
-	gint _tmp14_;
-	gint _tmp16_;
-	g_return_val_if_fail (a != NULL, NULL);
-	g_return_val_if_fail (b != NULL, NULL);
-	self = (soyatomsColor*) g_object_new (object_type, NULL);
-	_tmp0_ = a;
-	_tmp1_ = _tmp0_->priv->_red;
-	_tmp2_ = b;
-	_tmp3_ = _tmp2_->priv->_red;
-	_r = (gint) (_tmp1_ - _tmp3_);
-	_tmp4_ = a;
-	_tmp5_ = _tmp4_->priv->_green;
-	_tmp6_ = b;
-	_tmp7_ = _tmp6_->priv->_green;
-	_g = (gint) (_tmp5_ - _tmp7_);
-	_tmp8_ = a;
-	_tmp9_ = _tmp8_->priv->_blue;
-	_tmp10_ = b;
-	_tmp11_ = _tmp10_->priv->_blue;
-	_b = (gint) (_tmp9_ - _tmp11_);
-	_tmp12_ = _r;
-	if (_tmp12_ >= 0) {
-		gint _tmp13_;
-		_tmp13_ = _r;
-		self->priv->_red = (guchar) _tmp13_;
-	} else {
-		self->priv->_red = (guchar) 0;
-	}
-	_tmp14_ = _g;
-	if (_tmp14_ >= 0) {
-		gint _tmp15_;
-		_tmp15_ = _g;
-		self->priv->_green = (guchar) _tmp15_;
-	} else {
-		self->priv->_green = (guchar) 0;
-	}
-	_tmp16_ = _b;
-	if (_tmp16_ >= 0) {
-		gint _tmp17_;
-		_tmp17_ = _b;
-		self->priv->_blue = (guchar) _tmp17_;
-	} else {
-		self->priv->_blue = (guchar) 0;
-	}
-	self->priv->_alpha = (guchar) 255;
-	return self;
-}
-
-
-soyatomsColor* soy_atoms_color_new_subtract (soyatomsColor* a, soyatomsColor* b) {
-	return soy_atoms_color_construct_subtract (SOY_ATOMS_TYPE_COLOR, a, b);
+soyatomsColor* soy_atoms_color_new_operate (soyatomsColor* left, soyatomsColor* right_color, gfloat right_float, soyMathOperator operator) {
+	return soy_atoms_color_construct_operate (SOY_ATOMS_TYPE_COLOR, left, right_color, right_float, operator);
 }
 
 
@@ -710,6 +846,119 @@ gfloat* soy_atoms_color_get4f (soyatomsColor* self, int* result_length1) {
 }
 
 
+void soy_atoms_color_set4f (soyatomsColor* self, gfloat* rgba, int rgba_length1) {
+	gfloat* _tmp0_;
+	gint _tmp0__length1;
+	gfloat _tmp1_;
+	gfloat* _tmp6_;
+	gint _tmp6__length1;
+	gfloat _tmp7_;
+	gfloat* _tmp12_;
+	gint _tmp12__length1;
+	gfloat _tmp13_;
+	gfloat* _tmp18_;
+	gint _tmp18__length1;
+	gfloat _tmp19_;
+	g_return_if_fail (self != NULL);
+	_tmp0_ = rgba;
+	_tmp0__length1 = rgba_length1;
+	_tmp1_ = _tmp0_[0];
+	if (_tmp1_ > 1.0f) {
+		self->priv->_red = (guchar) 255;
+	} else {
+		gfloat* _tmp2_;
+		gint _tmp2__length1;
+		gfloat _tmp3_;
+		_tmp2_ = rgba;
+		_tmp2__length1 = rgba_length1;
+		_tmp3_ = _tmp2_[0];
+		if (_tmp3_ < 0.0f) {
+			self->priv->_red = (guchar) 0;
+		} else {
+			gfloat* _tmp4_;
+			gint _tmp4__length1;
+			gfloat _tmp5_;
+			_tmp4_ = rgba;
+			_tmp4__length1 = rgba_length1;
+			_tmp5_ = _tmp4_[0];
+			self->priv->_red = (guchar) (_tmp5_ * 255.0f);
+		}
+	}
+	_tmp6_ = rgba;
+	_tmp6__length1 = rgba_length1;
+	_tmp7_ = _tmp6_[1];
+	if (_tmp7_ > 1.0f) {
+		self->priv->_green = (guchar) 255;
+	} else {
+		gfloat* _tmp8_;
+		gint _tmp8__length1;
+		gfloat _tmp9_;
+		_tmp8_ = rgba;
+		_tmp8__length1 = rgba_length1;
+		_tmp9_ = _tmp8_[1];
+		if (_tmp9_ < 0.0f) {
+			self->priv->_green = (guchar) 0;
+		} else {
+			gfloat* _tmp10_;
+			gint _tmp10__length1;
+			gfloat _tmp11_;
+			_tmp10_ = rgba;
+			_tmp10__length1 = rgba_length1;
+			_tmp11_ = _tmp10_[1];
+			self->priv->_green = (guchar) (_tmp11_ * 255.0f);
+		}
+	}
+	_tmp12_ = rgba;
+	_tmp12__length1 = rgba_length1;
+	_tmp13_ = _tmp12_[2];
+	if (_tmp13_ > 1.0f) {
+		self->priv->_blue = (guchar) 255;
+	} else {
+		gfloat* _tmp14_;
+		gint _tmp14__length1;
+		gfloat _tmp15_;
+		_tmp14_ = rgba;
+		_tmp14__length1 = rgba_length1;
+		_tmp15_ = _tmp14_[2];
+		if (_tmp15_ < 0.0f) {
+			self->priv->_blue = (guchar) 0;
+		} else {
+			gfloat* _tmp16_;
+			gint _tmp16__length1;
+			gfloat _tmp17_;
+			_tmp16_ = rgba;
+			_tmp16__length1 = rgba_length1;
+			_tmp17_ = _tmp16_[2];
+			self->priv->_blue = (guchar) (_tmp17_ * 255.0f);
+		}
+	}
+	_tmp18_ = rgba;
+	_tmp18__length1 = rgba_length1;
+	_tmp19_ = _tmp18_[3];
+	if (_tmp19_ > 1.0f) {
+		self->priv->_alpha = (guchar) 255;
+	} else {
+		gfloat* _tmp20_;
+		gint _tmp20__length1;
+		gfloat _tmp21_;
+		_tmp20_ = rgba;
+		_tmp20__length1 = rgba_length1;
+		_tmp21_ = _tmp20_[3];
+		if (_tmp21_ < 0.0f) {
+			self->priv->_alpha = (guchar) 0;
+		} else {
+			gfloat* _tmp22_;
+			gint _tmp22__length1;
+			gfloat _tmp23_;
+			_tmp22_ = rgba;
+			_tmp22__length1 = rgba_length1;
+			_tmp23_ = _tmp22_[3];
+			self->priv->_alpha = (guchar) (_tmp23_ * 255.0f);
+		}
+	}
+}
+
+
 guchar* soy_atoms_color_get4ub (soyatomsColor* self, int* result_length1) {
 	guchar* result = NULL;
 	guchar _tmp0_;
@@ -739,134 +988,6 @@ guchar* soy_atoms_color_get4ub (soyatomsColor* self, int* result_length1) {
 }
 
 
-gboolean soy_atoms_color_cmp_eq (GObject* left, GObject* right) {
-	gboolean result = FALSE;
-	gboolean _tmp0_ = FALSE;
-	GObject* _tmp1_;
-	gboolean _tmp3_;
-	gboolean _r = FALSE;
-	gboolean _g = FALSE;
-	gboolean _b = FALSE;
-	gboolean _a = FALSE;
-	GObject* _tmp4_;
-	gint _tmp5_ = 0;
-	guchar* _tmp6_ = NULL;
-	guchar* lefta;
-	gint lefta_length1;
-	gint _lefta_size_;
-	GObject* _tmp7_;
-	gint _tmp8_ = 0;
-	guchar* _tmp9_ = NULL;
-	guchar* righta;
-	gint righta_length1;
-	gint _righta_size_;
-	guchar* _tmp10_;
-	gint _tmp10__length1;
-	guchar _tmp11_;
-	guchar* _tmp12_;
-	gint _tmp12__length1;
-	guchar _tmp13_;
-	guchar* _tmp14_;
-	gint _tmp14__length1;
-	guchar _tmp15_;
-	guchar* _tmp16_;
-	gint _tmp16__length1;
-	guchar _tmp17_;
-	guchar* _tmp18_;
-	gint _tmp18__length1;
-	guchar _tmp19_;
-	guchar* _tmp20_;
-	gint _tmp20__length1;
-	guchar _tmp21_;
-	guchar* _tmp22_;
-	gint _tmp22__length1;
-	guchar _tmp23_;
-	guchar* _tmp24_;
-	gint _tmp24__length1;
-	guchar _tmp25_;
-	gboolean _tmp26_;
-	gboolean _tmp27_;
-	gboolean _tmp28_;
-	gboolean _tmp29_;
-	g_return_val_if_fail (left != NULL, FALSE);
-	g_return_val_if_fail (right != NULL, FALSE);
-	_tmp1_ = left;
-	if (!G_TYPE_CHECK_INSTANCE_TYPE (_tmp1_, SOY_ATOMS_TYPE_COLOR)) {
-		_tmp0_ = TRUE;
-	} else {
-		GObject* _tmp2_;
-		_tmp2_ = right;
-		_tmp0_ = !G_TYPE_CHECK_INSTANCE_TYPE (_tmp2_, SOY_ATOMS_TYPE_COLOR);
-	}
-	_tmp3_ = _tmp0_;
-	if (_tmp3_) {
-		result = FALSE;
-		return result;
-	}
-	_tmp4_ = left;
-	_tmp6_ = soy_atoms_color_get4ub (G_TYPE_CHECK_INSTANCE_CAST (_tmp4_, SOY_ATOMS_TYPE_COLOR, soyatomsColor), &_tmp5_);
-	lefta = _tmp6_;
-	lefta_length1 = _tmp5_;
-	_lefta_size_ = lefta_length1;
-	_tmp7_ = right;
-	_tmp9_ = soy_atoms_color_get4ub (G_TYPE_CHECK_INSTANCE_CAST (_tmp7_, SOY_ATOMS_TYPE_COLOR, soyatomsColor), &_tmp8_);
-	righta = _tmp9_;
-	righta_length1 = _tmp8_;
-	_righta_size_ = righta_length1;
-	_tmp10_ = lefta;
-	_tmp10__length1 = lefta_length1;
-	_tmp11_ = _tmp10_[0];
-	_tmp12_ = righta;
-	_tmp12__length1 = righta_length1;
-	_tmp13_ = _tmp12_[0];
-	_r = _tmp11_ == _tmp13_;
-	_tmp14_ = lefta;
-	_tmp14__length1 = lefta_length1;
-	_tmp15_ = _tmp14_[1];
-	_tmp16_ = righta;
-	_tmp16__length1 = righta_length1;
-	_tmp17_ = _tmp16_[1];
-	_g = _tmp15_ == _tmp17_;
-	_tmp18_ = lefta;
-	_tmp18__length1 = lefta_length1;
-	_tmp19_ = _tmp18_[2];
-	_tmp20_ = righta;
-	_tmp20__length1 = righta_length1;
-	_tmp21_ = _tmp20_[2];
-	_b = _tmp19_ == _tmp21_;
-	_tmp22_ = lefta;
-	_tmp22__length1 = lefta_length1;
-	_tmp23_ = _tmp22_[3];
-	_tmp24_ = righta;
-	_tmp24__length1 = righta_length1;
-	_tmp25_ = _tmp24_[3];
-	_a = _tmp23_ == _tmp25_;
-	_tmp26_ = _r;
-	_tmp27_ = _g;
-	_tmp28_ = _b;
-	_tmp29_ = _a;
-	result = ((_tmp26_ & _tmp27_) & _tmp28_) & _tmp29_;
-	righta = (g_free (righta), NULL);
-	lefta = (g_free (lefta), NULL);
-	return result;
-}
-
-
-gboolean soy_atoms_color_cmp_ne (GObject* left, GObject* right) {
-	gboolean result = FALSE;
-	GObject* _tmp0_;
-	GObject* _tmp1_;
-	gboolean _tmp2_ = FALSE;
-	g_return_val_if_fail (left != NULL, FALSE);
-	g_return_val_if_fail (right != NULL, FALSE);
-	_tmp0_ = left;
-	_tmp1_ = right;
-	_tmp2_ = soy_atoms_color_cmp_eq (_tmp0_, _tmp1_);
-	result = !_tmp2_;
-	return result;
-}
-
-
 static gpointer _g_object_ref0 (gpointer self) {
 	return self ? g_object_ref (self) : NULL;
 }
@@ -877,7 +998,9 @@ gboolean soy_atoms_color_cmp (GObject* left, GObject* right, soyComparison compa
 	gboolean _tmp0_ = FALSE;
 	GObject* _tmp1_;
 	gboolean _tmp3_;
-	soyComparison _tmp4_;
+	gboolean _tmp4_ = FALSE;
+	soyComparison _tmp5_;
+	gboolean _tmp7_;
 	g_return_val_if_fail (left != NULL, FALSE);
 	g_return_val_if_fail (right != NULL, FALSE);
 	_tmp1_ = left;
@@ -893,147 +1016,263 @@ gboolean soy_atoms_color_cmp (GObject* left, GObject* right, soyComparison compa
 		result = FALSE;
 		return result;
 	}
-	_tmp4_ = comparison;
-	if (_tmp4_ == SOY_COMPARISON_EQ) {
-		GObject* _tmp5_;
-		GObject* _tmp6_;
-		gboolean _tmp7_ = FALSE;
-		_tmp5_ = left;
-		_tmp6_ = right;
-		_tmp7_ = soy_atoms_color_cmp_eq (_tmp5_, _tmp6_);
-		result = _tmp7_;
-		return result;
+	_tmp5_ = comparison;
+	if (_tmp5_ == SOY_COMPARISON_EQ) {
+		_tmp4_ = TRUE;
 	} else {
-		soyComparison _tmp8_;
-		_tmp8_ = comparison;
-		if (_tmp8_ == SOY_COMPARISON_NE) {
-			GObject* _tmp9_;
-			GObject* _tmp10_;
-			gboolean _tmp11_ = FALSE;
-			_tmp9_ = left;
-			_tmp10_ = right;
-			_tmp11_ = soy_atoms_color_cmp_ne (_tmp9_, _tmp10_);
-			result = _tmp11_;
+		soyComparison _tmp6_;
+		_tmp6_ = comparison;
+		_tmp4_ = _tmp6_ == SOY_COMPARISON_NE;
+	}
+	_tmp7_ = _tmp4_;
+	if (_tmp7_) {
+		gboolean _r = FALSE;
+		gboolean _g = FALSE;
+		gboolean _b = FALSE;
+		gboolean _a = FALSE;
+		gboolean is_equal = FALSE;
+		GObject* _tmp8_;
+		gint _tmp9_ = 0;
+		guchar* _tmp10_ = NULL;
+		guchar* lefta;
+		gint lefta_length1;
+		gint _lefta_size_;
+		GObject* _tmp11_;
+		gint _tmp12_ = 0;
+		guchar* _tmp13_ = NULL;
+		guchar* righta;
+		gint righta_length1;
+		gint _righta_size_;
+		guchar* _tmp14_;
+		gint _tmp14__length1;
+		guchar _tmp15_;
+		guchar* _tmp16_;
+		gint _tmp16__length1;
+		guchar _tmp17_;
+		guchar* _tmp18_;
+		gint _tmp18__length1;
+		guchar _tmp19_;
+		guchar* _tmp20_;
+		gint _tmp20__length1;
+		guchar _tmp21_;
+		guchar* _tmp22_;
+		gint _tmp22__length1;
+		guchar _tmp23_;
+		guchar* _tmp24_;
+		gint _tmp24__length1;
+		guchar _tmp25_;
+		guchar* _tmp26_;
+		gint _tmp26__length1;
+		guchar _tmp27_;
+		guchar* _tmp28_;
+		gint _tmp28__length1;
+		guchar _tmp29_;
+		gboolean _tmp30_ = FALSE;
+		gboolean _tmp31_ = FALSE;
+		gboolean _tmp32_ = FALSE;
+		gboolean _tmp33_;
+		gboolean _tmp35_;
+		gboolean _tmp37_;
+		gboolean _tmp39_;
+		soyComparison _tmp40_;
+		_tmp8_ = left;
+		_tmp10_ = soy_atoms_color_get4ub (G_TYPE_CHECK_INSTANCE_CAST (_tmp8_, SOY_ATOMS_TYPE_COLOR, soyatomsColor), &_tmp9_);
+		lefta = _tmp10_;
+		lefta_length1 = _tmp9_;
+		_lefta_size_ = lefta_length1;
+		_tmp11_ = right;
+		_tmp13_ = soy_atoms_color_get4ub (G_TYPE_CHECK_INSTANCE_CAST (_tmp11_, SOY_ATOMS_TYPE_COLOR, soyatomsColor), &_tmp12_);
+		righta = _tmp13_;
+		righta_length1 = _tmp12_;
+		_righta_size_ = righta_length1;
+		_tmp14_ = lefta;
+		_tmp14__length1 = lefta_length1;
+		_tmp15_ = _tmp14_[0];
+		_tmp16_ = righta;
+		_tmp16__length1 = righta_length1;
+		_tmp17_ = _tmp16_[0];
+		_r = _tmp15_ == _tmp17_;
+		_tmp18_ = lefta;
+		_tmp18__length1 = lefta_length1;
+		_tmp19_ = _tmp18_[1];
+		_tmp20_ = righta;
+		_tmp20__length1 = righta_length1;
+		_tmp21_ = _tmp20_[1];
+		_g = _tmp19_ == _tmp21_;
+		_tmp22_ = lefta;
+		_tmp22__length1 = lefta_length1;
+		_tmp23_ = _tmp22_[2];
+		_tmp24_ = righta;
+		_tmp24__length1 = righta_length1;
+		_tmp25_ = _tmp24_[2];
+		_b = _tmp23_ == _tmp25_;
+		_tmp26_ = lefta;
+		_tmp26__length1 = lefta_length1;
+		_tmp27_ = _tmp26_[3];
+		_tmp28_ = righta;
+		_tmp28__length1 = righta_length1;
+		_tmp29_ = _tmp28_[3];
+		_a = _tmp27_ == _tmp29_;
+		_tmp33_ = _r;
+		if (_tmp33_) {
+			gboolean _tmp34_;
+			_tmp34_ = _g;
+			_tmp32_ = _tmp34_;
+		} else {
+			_tmp32_ = FALSE;
+		}
+		_tmp35_ = _tmp32_;
+		if (_tmp35_) {
+			gboolean _tmp36_;
+			_tmp36_ = _b;
+			_tmp31_ = _tmp36_;
+		} else {
+			_tmp31_ = FALSE;
+		}
+		_tmp37_ = _tmp31_;
+		if (_tmp37_) {
+			gboolean _tmp38_;
+			_tmp38_ = _a;
+			_tmp30_ = _tmp38_;
+		} else {
+			_tmp30_ = FALSE;
+		}
+		_tmp39_ = _tmp30_;
+		is_equal = _tmp39_;
+		_tmp40_ = comparison;
+		if (_tmp40_ == SOY_COMPARISON_EQ) {
+			result = is_equal;
+			righta = (g_free (righta), NULL);
+			lefta = (g_free (lefta), NULL);
 			return result;
 		} else {
-			GObject* _tmp12_;
-			soyatomsColor* _tmp13_;
-			soyatomsColor* lefta;
-			GObject* _tmp14_;
-			soyatomsColor* _tmp15_;
-			soyatomsColor* righta;
-			gfloat lum_left = 0.0F;
-			gfloat lum_right = 0.0F;
-			soyatomsColor* _tmp16_;
-			guchar _tmp17_;
-			soyatomsColor* _tmp18_;
-			guchar _tmp19_;
-			soyatomsColor* _tmp20_;
-			guchar _tmp21_;
-			soyatomsColor* _tmp22_;
-			guchar _tmp23_;
-			soyatomsColor* _tmp24_;
-			guchar _tmp25_;
-			soyatomsColor* _tmp26_;
-			guchar _tmp27_;
-			gfloat _tmp28_ = 0.0F;
-			soyatomsColor* _tmp29_;
-			guchar _tmp30_;
-			soyatomsColor* _tmp31_;
-			guchar _tmp32_;
-			soyatomsColor* _tmp33_;
-			guchar _tmp34_;
-			soyatomsColor* _tmp35_;
-			guchar _tmp36_;
-			soyatomsColor* _tmp37_;
-			guchar _tmp38_;
-			soyatomsColor* _tmp39_;
-			guchar _tmp40_;
-			gfloat _tmp41_ = 0.0F;
-			soyComparison _tmp42_;
-			_tmp12_ = left;
-			_tmp13_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp12_, SOY_ATOMS_TYPE_COLOR, soyatomsColor));
-			lefta = _tmp13_;
-			_tmp14_ = right;
-			_tmp15_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp14_, SOY_ATOMS_TYPE_COLOR, soyatomsColor));
-			righta = _tmp15_;
-			_tmp16_ = lefta;
-			_tmp17_ = _tmp16_->priv->_red;
-			_tmp18_ = lefta;
-			_tmp19_ = _tmp18_->priv->_red;
-			_tmp20_ = lefta;
-			_tmp21_ = _tmp20_->priv->_green;
-			_tmp22_ = lefta;
-			_tmp23_ = _tmp22_->priv->_green;
-			_tmp24_ = lefta;
-			_tmp25_ = _tmp24_->priv->_blue;
-			_tmp26_ = lefta;
-			_tmp27_ = _tmp26_->priv->_blue;
-			_tmp28_ = sqrtf ((((0.299f * _tmp17_) * _tmp19_) + ((0.587f * _tmp21_) * _tmp23_)) + ((0.114f * _tmp25_) * _tmp27_));
-			lum_left = _tmp28_;
-			_tmp29_ = righta;
-			_tmp30_ = _tmp29_->priv->_red;
-			_tmp31_ = righta;
-			_tmp32_ = _tmp31_->priv->_red;
-			_tmp33_ = righta;
-			_tmp34_ = _tmp33_->priv->_green;
-			_tmp35_ = righta;
-			_tmp36_ = _tmp35_->priv->_green;
-			_tmp37_ = righta;
-			_tmp38_ = _tmp37_->priv->_blue;
-			_tmp39_ = righta;
-			_tmp40_ = _tmp39_->priv->_blue;
-			_tmp41_ = sqrtf ((((0.299f * _tmp30_) * _tmp32_) + ((0.587f * _tmp34_) * _tmp36_)) + ((0.114f * _tmp38_) * _tmp40_));
-			lum_right = _tmp41_;
-			_tmp42_ = comparison;
-			if (_tmp42_ == SOY_COMPARISON_GT) {
-				gfloat _tmp43_;
-				gfloat _tmp44_;
-				_tmp43_ = lum_left;
-				_tmp44_ = lum_right;
-				result = _tmp43_ > _tmp44_;
+			gboolean _tmp41_;
+			_tmp41_ = is_equal;
+			result = !_tmp41_;
+			righta = (g_free (righta), NULL);
+			lefta = (g_free (lefta), NULL);
+			return result;
+		}
+		righta = (g_free (righta), NULL);
+		lefta = (g_free (lefta), NULL);
+	} else {
+		GObject* _tmp42_;
+		soyatomsColor* _tmp43_;
+		soyatomsColor* lefta;
+		GObject* _tmp44_;
+		soyatomsColor* _tmp45_;
+		soyatomsColor* righta;
+		gfloat lum_left = 0.0F;
+		gfloat lum_right = 0.0F;
+		soyatomsColor* _tmp46_;
+		guchar _tmp47_;
+		soyatomsColor* _tmp48_;
+		guchar _tmp49_;
+		soyatomsColor* _tmp50_;
+		guchar _tmp51_;
+		soyatomsColor* _tmp52_;
+		guchar _tmp53_;
+		soyatomsColor* _tmp54_;
+		guchar _tmp55_;
+		soyatomsColor* _tmp56_;
+		guchar _tmp57_;
+		gfloat _tmp58_ = 0.0F;
+		soyatomsColor* _tmp59_;
+		guchar _tmp60_;
+		soyatomsColor* _tmp61_;
+		guchar _tmp62_;
+		soyatomsColor* _tmp63_;
+		guchar _tmp64_;
+		soyatomsColor* _tmp65_;
+		guchar _tmp66_;
+		soyatomsColor* _tmp67_;
+		guchar _tmp68_;
+		soyatomsColor* _tmp69_;
+		guchar _tmp70_;
+		gfloat _tmp71_ = 0.0F;
+		soyComparison _tmp72_;
+		_tmp42_ = left;
+		_tmp43_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp42_, SOY_ATOMS_TYPE_COLOR, soyatomsColor));
+		lefta = _tmp43_;
+		_tmp44_ = right;
+		_tmp45_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp44_, SOY_ATOMS_TYPE_COLOR, soyatomsColor));
+		righta = _tmp45_;
+		_tmp46_ = lefta;
+		_tmp47_ = _tmp46_->priv->_red;
+		_tmp48_ = lefta;
+		_tmp49_ = _tmp48_->priv->_red;
+		_tmp50_ = lefta;
+		_tmp51_ = _tmp50_->priv->_green;
+		_tmp52_ = lefta;
+		_tmp53_ = _tmp52_->priv->_green;
+		_tmp54_ = lefta;
+		_tmp55_ = _tmp54_->priv->_blue;
+		_tmp56_ = lefta;
+		_tmp57_ = _tmp56_->priv->_blue;
+		_tmp58_ = sqrtf ((((0.299f * _tmp47_) * _tmp49_) + ((0.587f * _tmp51_) * _tmp53_)) + ((0.114f * _tmp55_) * _tmp57_));
+		lum_left = _tmp58_;
+		_tmp59_ = righta;
+		_tmp60_ = _tmp59_->priv->_red;
+		_tmp61_ = righta;
+		_tmp62_ = _tmp61_->priv->_red;
+		_tmp63_ = righta;
+		_tmp64_ = _tmp63_->priv->_green;
+		_tmp65_ = righta;
+		_tmp66_ = _tmp65_->priv->_green;
+		_tmp67_ = righta;
+		_tmp68_ = _tmp67_->priv->_blue;
+		_tmp69_ = righta;
+		_tmp70_ = _tmp69_->priv->_blue;
+		_tmp71_ = sqrtf ((((0.299f * _tmp60_) * _tmp62_) + ((0.587f * _tmp64_) * _tmp66_)) + ((0.114f * _tmp68_) * _tmp70_));
+		lum_right = _tmp71_;
+		_tmp72_ = comparison;
+		if (_tmp72_ == SOY_COMPARISON_GT) {
+			gfloat _tmp73_;
+			gfloat _tmp74_;
+			_tmp73_ = lum_left;
+			_tmp74_ = lum_right;
+			result = _tmp73_ > _tmp74_;
+			_g_object_unref0 (righta);
+			_g_object_unref0 (lefta);
+			return result;
+		} else {
+			soyComparison _tmp75_;
+			_tmp75_ = comparison;
+			if (_tmp75_ == SOY_COMPARISON_GE) {
+				gfloat _tmp76_;
+				gfloat _tmp77_;
+				_tmp76_ = lum_left;
+				_tmp77_ = lum_right;
+				result = _tmp76_ >= _tmp77_;
 				_g_object_unref0 (righta);
 				_g_object_unref0 (lefta);
 				return result;
 			} else {
-				soyComparison _tmp45_;
-				_tmp45_ = comparison;
-				if (_tmp45_ == SOY_COMPARISON_GE) {
-					gfloat _tmp46_;
-					gfloat _tmp47_;
-					_tmp46_ = lum_left;
-					_tmp47_ = lum_right;
-					result = _tmp46_ >= _tmp47_;
+				soyComparison _tmp78_;
+				_tmp78_ = comparison;
+				if (_tmp78_ == SOY_COMPARISON_LT) {
+					gfloat _tmp79_;
+					gfloat _tmp80_;
+					_tmp79_ = lum_left;
+					_tmp80_ = lum_right;
+					result = _tmp79_ < _tmp80_;
 					_g_object_unref0 (righta);
 					_g_object_unref0 (lefta);
 					return result;
 				} else {
-					soyComparison _tmp48_;
-					_tmp48_ = comparison;
-					if (_tmp48_ == SOY_COMPARISON_LT) {
-						gfloat _tmp49_;
-						gfloat _tmp50_;
-						_tmp49_ = lum_left;
-						_tmp50_ = lum_right;
-						result = _tmp49_ < _tmp50_;
-						_g_object_unref0 (righta);
-						_g_object_unref0 (lefta);
-						return result;
-					} else {
-						gfloat _tmp51_;
-						gfloat _tmp52_;
-						_tmp51_ = lum_left;
-						_tmp52_ = lum_right;
-						result = _tmp51_ <= _tmp52_;
-						_g_object_unref0 (righta);
-						_g_object_unref0 (lefta);
-						return result;
-					}
+					gfloat _tmp81_;
+					gfloat _tmp82_;
+					_tmp81_ = lum_left;
+					_tmp82_ = lum_right;
+					result = _tmp81_ <= _tmp82_;
+					_g_object_unref0 (righta);
+					_g_object_unref0 (lefta);
+					return result;
 				}
 			}
-			_g_object_unref0 (righta);
-			_g_object_unref0 (lefta);
 		}
+		_g_object_unref0 (righta);
+		_g_object_unref0 (lefta);
 	}
 }
 
@@ -1190,292 +1429,102 @@ static gchar string_get (const gchar* self, glong index) {
 }
 
 
-static gchar* string_slice (const gchar* self, glong start, glong end) {
-	gchar* result = NULL;
-	gint _tmp0_;
-	gint _tmp1_;
-	glong string_length;
-	glong _tmp2_;
-	glong _tmp5_;
-	gboolean _tmp8_ = FALSE;
-	glong _tmp9_;
-	gboolean _tmp12_;
-	gboolean _tmp13_ = FALSE;
-	glong _tmp14_;
-	gboolean _tmp17_;
-	glong _tmp18_;
-	glong _tmp19_;
-	glong _tmp20_;
-	glong _tmp21_;
-	glong _tmp22_;
-	gchar* _tmp23_ = NULL;
-	g_return_val_if_fail (self != NULL, NULL);
-	_tmp0_ = strlen (self);
-	_tmp1_ = _tmp0_;
-	string_length = (glong) _tmp1_;
-	_tmp2_ = start;
-	if (_tmp2_ < ((glong) 0)) {
-		glong _tmp3_;
-		glong _tmp4_;
-		_tmp3_ = string_length;
-		_tmp4_ = start;
-		start = _tmp3_ + _tmp4_;
-	}
-	_tmp5_ = end;
-	if (_tmp5_ < ((glong) 0)) {
-		glong _tmp6_;
-		glong _tmp7_;
-		_tmp6_ = string_length;
-		_tmp7_ = end;
-		end = _tmp6_ + _tmp7_;
-	}
-	_tmp9_ = start;
-	if (_tmp9_ >= ((glong) 0)) {
-		glong _tmp10_;
-		glong _tmp11_;
-		_tmp10_ = start;
-		_tmp11_ = string_length;
-		_tmp8_ = _tmp10_ <= _tmp11_;
-	} else {
-		_tmp8_ = FALSE;
-	}
-	_tmp12_ = _tmp8_;
-	g_return_val_if_fail (_tmp12_, NULL);
-	_tmp14_ = end;
-	if (_tmp14_ >= ((glong) 0)) {
-		glong _tmp15_;
-		glong _tmp16_;
-		_tmp15_ = end;
-		_tmp16_ = string_length;
-		_tmp13_ = _tmp15_ <= _tmp16_;
-	} else {
-		_tmp13_ = FALSE;
-	}
-	_tmp17_ = _tmp13_;
-	g_return_val_if_fail (_tmp17_, NULL);
-	_tmp18_ = start;
-	_tmp19_ = end;
-	g_return_val_if_fail (_tmp18_ <= _tmp19_, NULL);
-	_tmp20_ = start;
-	_tmp21_ = end;
-	_tmp22_ = start;
-	_tmp23_ = g_strndup (((gchar*) self) + _tmp20_, (gsize) (_tmp21_ - _tmp22_));
-	result = _tmp23_;
-	return result;
-}
-
-
 void soy_atoms_color_set_hex (soyatomsColor* self, const gchar* value) {
-	gboolean _tmp0_ = FALSE;
-	gboolean _tmp1_ = FALSE;
-	const gchar* _tmp2_;
-	gint _tmp3_;
-	gint _tmp4_;
-	gboolean _tmp8_;
-	gboolean _tmp11_;
+	guint r;
+	guint g;
+	guint b;
+	guint a;
+	const gchar* _tmp0_;
+	gchar _tmp1_ = '\0';
+	guint _tmp25_;
+	guint _tmp26_;
+	guint _tmp27_;
+	guint _tmp28_;
 	g_return_if_fail (self != NULL);
-	_tmp2_ = value;
-	_tmp3_ = strlen (_tmp2_);
-	_tmp4_ = _tmp3_;
-	if (_tmp4_ >= 4) {
-		const gchar* _tmp5_;
-		gint _tmp6_;
-		gint _tmp7_;
-		_tmp5_ = value;
-		_tmp6_ = strlen (_tmp5_);
-		_tmp7_ = _tmp6_;
-		_tmp1_ = _tmp7_ <= 9;
-	} else {
-		_tmp1_ = FALSE;
-	}
-	_tmp8_ = _tmp1_;
-	if (_tmp8_) {
-		const gchar* _tmp9_;
-		gchar _tmp10_ = '\0';
-		_tmp9_ = value;
-		_tmp10_ = string_get (_tmp9_, (glong) 0);
-		_tmp0_ = _tmp10_ == '#';
-	} else {
-		_tmp0_ = FALSE;
-	}
-	_tmp11_ = _tmp0_;
-	if (_tmp11_) {
-		const gchar* _tmp12_;
-		gint _tmp13_;
-		gint _tmp14_;
-		_tmp12_ = value;
-		_tmp13_ = strlen (_tmp12_);
-		_tmp14_ = _tmp13_;
-		if (_tmp14_ == 9) {
-			const gchar* _tmp15_;
-			gchar* _tmp16_ = NULL;
-			gchar* _tmp17_;
-			const gchar* _tmp18_;
-			gchar* _tmp19_ = NULL;
-			gchar* _tmp20_;
-			const gchar* _tmp21_;
-			gchar* _tmp22_ = NULL;
-			gchar* _tmp23_;
-			const gchar* _tmp24_;
-			gchar* _tmp25_ = NULL;
-			gchar* _tmp26_;
-			_tmp15_ = value;
-			_tmp16_ = string_slice (_tmp15_, (glong) 1, (glong) 3);
-			_tmp17_ = _tmp16_;
-			sscanf (_tmp17_, "%x", &self->priv->_red);
-			_g_free0 (_tmp17_);
-			_tmp18_ = value;
-			_tmp19_ = string_slice (_tmp18_, (glong) 3, (glong) 5);
-			_tmp20_ = _tmp19_;
-			sscanf (_tmp20_, "%x", &self->priv->_green);
-			_g_free0 (_tmp20_);
-			_tmp21_ = value;
-			_tmp22_ = string_slice (_tmp21_, (glong) 5, (glong) 7);
-			_tmp23_ = _tmp22_;
-			sscanf (_tmp23_, "%x", &self->priv->_blue);
-			_g_free0 (_tmp23_);
-			_tmp24_ = value;
-			_tmp25_ = string_slice (_tmp24_, (glong) 7, (glong) 9);
-			_tmp26_ = _tmp25_;
-			sscanf (_tmp26_, "%x", &self->priv->_alpha);
-			_g_free0 (_tmp26_);
+	r = (guint) 0;
+	g = (guint) 0;
+	b = (guint) 0;
+	a = (guint) 255;
+	_tmp0_ = value;
+	_tmp1_ = string_get (_tmp0_, (glong) 0);
+	if (_tmp1_ == '#') {
+		const gchar* _tmp2_;
+		gint _tmp3_;
+		gint _tmp4_;
+		_tmp2_ = value;
+		_tmp3_ = strlen (_tmp2_);
+		_tmp4_ = _tmp3_;
+		if (_tmp4_ == 9) {
+			const gchar* _tmp5_;
+			_tmp5_ = value;
+			sscanf (_tmp5_, "#%2x%2x%2x%2x", &r, &g, &b, &a);
 		} else {
-			const gchar* _tmp27_;
-			gint _tmp28_;
-			gint _tmp29_;
-			_tmp27_ = value;
-			_tmp28_ = strlen (_tmp27_);
-			_tmp29_ = _tmp28_;
-			if (_tmp29_ >= 7) {
-				const gchar* _tmp30_;
-				gchar* _tmp31_ = NULL;
-				gchar* _tmp32_;
-				const gchar* _tmp33_;
-				gchar* _tmp34_ = NULL;
-				gchar* _tmp35_;
-				const gchar* _tmp36_;
-				gchar* _tmp37_ = NULL;
-				gchar* _tmp38_;
-				_tmp30_ = value;
-				_tmp31_ = string_slice (_tmp30_, (glong) 1, (glong) 3);
-				_tmp32_ = _tmp31_;
-				sscanf (_tmp32_, "%x", &self->priv->_red);
-				_g_free0 (_tmp32_);
-				_tmp33_ = value;
-				_tmp34_ = string_slice (_tmp33_, (glong) 3, (glong) 5);
-				_tmp35_ = _tmp34_;
-				sscanf (_tmp35_, "%x", &self->priv->_green);
-				_g_free0 (_tmp35_);
-				_tmp36_ = value;
-				_tmp37_ = string_slice (_tmp36_, (glong) 5, (glong) 7);
-				_tmp38_ = _tmp37_;
-				sscanf (_tmp38_, "%x", &self->priv->_blue);
-				_g_free0 (_tmp38_);
-				self->priv->_alpha = (guchar) 255;
+			const gchar* _tmp6_;
+			gint _tmp7_;
+			gint _tmp8_;
+			_tmp6_ = value;
+			_tmp7_ = strlen (_tmp6_);
+			_tmp8_ = _tmp7_;
+			if (_tmp8_ == 7) {
+				const gchar* _tmp9_;
+				_tmp9_ = value;
+				sscanf (_tmp9_, "#%2x%2x%2x", &r, &g, &b);
 			} else {
-				const gchar* _tmp39_;
-				gint _tmp40_;
-				gint _tmp41_;
-				_tmp39_ = value;
-				_tmp40_ = strlen (_tmp39_);
-				_tmp41_ = _tmp40_;
-				if (_tmp41_ >= 5) {
-					const gchar* _tmp42_;
-					gchar* _tmp43_ = NULL;
-					gchar* _tmp44_;
-					const gchar* _tmp45_;
-					gchar* _tmp46_ = NULL;
-					gchar* _tmp47_;
-					const gchar* _tmp48_;
-					gchar* _tmp49_ = NULL;
-					gchar* _tmp50_;
-					const gchar* _tmp51_;
-					gchar* _tmp52_ = NULL;
-					gchar* _tmp53_;
-					guchar _tmp54_;
-					guchar _tmp55_;
-					guchar _tmp56_;
-					guchar _tmp57_;
-					_tmp42_ = value;
-					_tmp43_ = string_slice (_tmp42_, (glong) 1, (glong) 2);
-					_tmp44_ = _tmp43_;
-					sscanf (_tmp44_, "%x", &self->priv->_red);
-					_g_free0 (_tmp44_);
-					_tmp45_ = value;
-					_tmp46_ = string_slice (_tmp45_, (glong) 2, (glong) 3);
-					_tmp47_ = _tmp46_;
-					sscanf (_tmp47_, "%x", &self->priv->_green);
-					_g_free0 (_tmp47_);
-					_tmp48_ = value;
-					_tmp49_ = string_slice (_tmp48_, (glong) 3, (glong) 4);
-					_tmp50_ = _tmp49_;
-					sscanf (_tmp50_, "%x", &self->priv->_blue);
-					_g_free0 (_tmp50_);
-					_tmp51_ = value;
-					_tmp52_ = string_slice (_tmp51_, (glong) 4, (glong) 5);
-					_tmp53_ = _tmp52_;
-					sscanf (_tmp53_, "%x", &self->priv->_alpha);
-					_g_free0 (_tmp53_);
-					_tmp54_ = self->priv->_red;
-					self->priv->_red = (guchar) (_tmp54_ * 17);
-					_tmp55_ = self->priv->_green;
-					self->priv->_green = (guchar) (_tmp55_ * 17);
-					_tmp56_ = self->priv->_blue;
-					self->priv->_blue = (guchar) (_tmp56_ * 17);
-					_tmp57_ = self->priv->_alpha;
-					self->priv->_alpha = (guchar) (_tmp57_ * 17);
+				const gchar* _tmp10_;
+				gint _tmp11_;
+				gint _tmp12_;
+				_tmp10_ = value;
+				_tmp11_ = strlen (_tmp10_);
+				_tmp12_ = _tmp11_;
+				if (_tmp12_ == 5) {
+					const gchar* _tmp13_;
+					guint _tmp14_;
+					guint _tmp15_;
+					guint _tmp16_;
+					guint _tmp17_;
+					_tmp13_ = value;
+					sscanf (_tmp13_, "#%1x%1x%1x%1x", &r, &g, &b, &a);
+					_tmp14_ = r;
+					r = _tmp14_ * 17;
+					_tmp15_ = g;
+					g = _tmp15_ * 17;
+					_tmp16_ = b;
+					b = _tmp16_ * 17;
+					_tmp17_ = a;
+					a = _tmp17_ * 17;
 				} else {
-					const gchar* _tmp58_;
-					gint _tmp59_;
-					gint _tmp60_;
-					_tmp58_ = value;
-					_tmp59_ = strlen (_tmp58_);
-					_tmp60_ = _tmp59_;
-					if (_tmp60_ >= 4) {
-						const gchar* _tmp61_;
-						gchar* _tmp62_ = NULL;
-						gchar* _tmp63_;
-						const gchar* _tmp64_;
-						gchar* _tmp65_ = NULL;
-						gchar* _tmp66_;
-						const gchar* _tmp67_;
-						gchar* _tmp68_ = NULL;
-						gchar* _tmp69_;
-						guchar _tmp70_;
-						guchar _tmp71_;
-						guchar _tmp72_;
-						_tmp61_ = value;
-						_tmp62_ = string_slice (_tmp61_, (glong) 1, (glong) 2);
-						_tmp63_ = _tmp62_;
-						sscanf (_tmp63_, "%x", &self->priv->_red);
-						_g_free0 (_tmp63_);
-						_tmp64_ = value;
-						_tmp65_ = string_slice (_tmp64_, (glong) 2, (glong) 3);
-						_tmp66_ = _tmp65_;
-						sscanf (_tmp66_, "%x", &self->priv->_green);
-						_g_free0 (_tmp66_);
-						_tmp67_ = value;
-						_tmp68_ = string_slice (_tmp67_, (glong) 3, (glong) 4);
-						_tmp69_ = _tmp68_;
-						sscanf (_tmp69_, "%x", &self->priv->_blue);
-						_g_free0 (_tmp69_);
-						_tmp70_ = self->priv->_red;
-						self->priv->_red = (guchar) (_tmp70_ * 17);
-						_tmp71_ = self->priv->_green;
-						self->priv->_green = (guchar) (_tmp71_ * 17);
-						_tmp72_ = self->priv->_blue;
-						self->priv->_blue = (guchar) (_tmp72_ * 17);
-						self->priv->_alpha = (guchar) 255;
+					const gchar* _tmp18_;
+					gint _tmp19_;
+					gint _tmp20_;
+					_tmp18_ = value;
+					_tmp19_ = strlen (_tmp18_);
+					_tmp20_ = _tmp19_;
+					if (_tmp20_ == 4) {
+						const gchar* _tmp21_;
+						guint _tmp22_;
+						guint _tmp23_;
+						guint _tmp24_;
+						_tmp21_ = value;
+						sscanf (_tmp21_, "#%1x%1x%1x", &r, &g, &b);
+						_tmp22_ = r;
+						r = _tmp22_ * 17;
+						_tmp23_ = g;
+						g = _tmp23_ * 17;
+						_tmp24_ = b;
+						b = _tmp24_ * 17;
 					}
 				}
 			}
 		}
-	} else {
-		self->priv->_red = (guchar) 0;
-		self->priv->_green = (guchar) 0;
-		self->priv->_blue = (guchar) 0;
-		self->priv->_alpha = (guchar) 255;
 	}
+	_tmp25_ = r;
+	self->priv->_red = (guchar) _tmp25_;
+	_tmp26_ = g;
+	self->priv->_green = (guchar) _tmp26_;
+	_tmp27_ = b;
+	self->priv->_blue = (guchar) _tmp27_;
+	_tmp28_ = a;
+	self->priv->_alpha = (guchar) _tmp28_;
 	g_object_notify ((GObject *) self, "hex");
 }
 

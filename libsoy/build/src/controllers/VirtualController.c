@@ -26,7 +26,7 @@
 #include <string.h>
 #include <GLES/gl.h>
 #include <GLES/glext.h>
-#include <ode.h>
+#include <soy-1/ode.h>
 #include <gee.h>
 
 

@@ -20,14 +20,20 @@
 
 static char
 m_doc[] = "soy.materials module\n"
-"\n";
+"\n"
+" Materials module import file imports colored and "
+"textured submodules for now. "
+"\n"
+;
 
-
+//has no methods of it's own. return nulls
 static PyMethodDef m_methods[] = {
     {NULL, NULL}
 };
 
 
+//define the module
+//defines itself as a module with no methods, and with a docstring
 static struct PyModuleDef module_def = {
     PyModuleDef_HEAD_INIT,
     "soy.materials",                                        // m_name
@@ -40,6 +46,7 @@ static struct PyModuleDef module_def = {
     NULL                                                    // m_free
 };
 
+//init the mod
 PyMODINIT_FUNC
 PyInit_soy_materials(void) {
     PyObject *module, *dict;
@@ -71,7 +78,7 @@ PyInit_soy_materials(void) {
 
     // add additional pydoc strings
     PyModule_AddStringConstant(module, "__credits__", PYSOY_CREDITS);
-    PyModule_AddStringConstant(module, "__version__", PYSOY_VERSION);
+    PyModule_AddStringConstant(module, "__version__", SOY_VERSION);
 
 
     /////////////////////////////////////////////////////////////////////////
@@ -90,6 +97,7 @@ PyInit_soy_materials(void) {
     /////////////////////////////////////////////////////////////////////////
 
 
+//error if it can't be imported
     if (PyErr_Occurred()) {
         PyErr_SetString(PyExc_ImportError, "soy.materials: module init failed");
         return NULL;

@@ -20,7 +20,8 @@
 #define __PYSOY_H__
 
 #include <Python.h>
-#include <soy.h>
+#include <soy-1/soy.h>
+#include <soy-1/config.h>
 #include <gio/gio.h>
 #include <X11/extensions/XInput2.h>
 #include <EGL/egl.h>

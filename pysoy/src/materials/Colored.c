@@ -22,8 +22,12 @@
 
 static char
 tp_doc[] = "soy.materials.Colored Type\n"
-"\n";
-// TODO
+"\n"
+"This is a class that describes the color"
+" attributes of a material. As such all materials tend to inherit it.  "
+" it also has modifiers for the various color properties, such as specular"
+"\n"
+;
 
 
 static SELF

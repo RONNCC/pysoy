@@ -145,6 +145,16 @@ typedef struct _soyscenesRoomClass soyscenesRoomClass;
 typedef struct _soyatomsPosition soyatomsPosition;
 typedef struct _soyatomsPositionClass soyatomsPositionClass;
 
+#define SOY_TEXTURES_TYPE_TEXTURE (soy_textures_texture_get_type ())
+#define SOY_TEXTURES_TEXTURE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), SOY_TEXTURES_TYPE_TEXTURE, soytexturesTexture))
+#define SOY_TEXTURES_TEXTURE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), SOY_TEXTURES_TYPE_TEXTURE, soytexturesTextureClass))
+#define SOY_TEXTURES_IS_TEXTURE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), SOY_TEXTURES_TYPE_TEXTURE))
+#define SOY_TEXTURES_IS_TEXTURE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), SOY_TEXTURES_TYPE_TEXTURE))
+#define SOY_TEXTURES_TEXTURE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), SOY_TEXTURES_TYPE_TEXTURE, soytexturesTextureClass))
+
+typedef struct _soytexturesTexture soytexturesTexture;
+typedef struct _soytexturesTextureClass soytexturesTextureClass;
+
 #define SOY_BODIES_TYPE_BODY (soy_bodies_body_get_type ())
 #define SOY_BODIES_BODY(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), SOY_BODIES_TYPE_BODY, soybodiesBody))
 #define SOY_BODIES_BODY_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), SOY_BODIES_TYPE_BODY, soybodiesBodyClass))
@@ -309,8 +319,11 @@ GType soy_scenes_room_get_type (void) G_GNUC_CONST;
 soyatomsPosition* soy_atoms_position_new (gfloat x, gfloat y, gfloat z);
 soyatomsPosition* soy_atoms_position_construct (GType object_type, gfloat x, gfloat y, gfloat z);
 GType soy_atoms_position_get_type (void) G_GNUC_CONST;
-soybodiesLight* soy_bodies_light_new (soyatomsPosition* position);
-soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position);
+soytexturesTexture* soy_textures_texture_new (void);
+soytexturesTexture* soy_textures_texture_construct (GType object_type);
+GType soy_textures_texture_get_type (void) G_GNUC_CONST;
+soybodiesLight* soy_bodies_light_new (soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
+soybodiesLight* soy_bodies_light_construct (GType object_type, soyatomsPosition* position, gfloat size, soytexturesTexture* texture);
 GType soy_bodies_body_get_type (void) G_GNUC_CONST;
 GType soy_bodies_light_get_type (void) G_GNUC_CONST;
 soybodiesCamera* soy_bodies_camera_new (soyatomsPosition* position);
@@ -1116,13 +1129,15 @@ void soy_net_client_create_window (soynetClient* self) {
 	soyscenesRoom* _tmp1_;
 	soyatomsPosition* _tmp2_;
 	soyatomsPosition* _tmp3_;
-	soybodiesLight* _tmp4_;
-	soybodiesLight* _tmp5_;
+	soytexturesTexture* _tmp4_;
+	soytexturesTexture* _tmp5_;
+	soybodiesLight* _tmp6_;
+	soybodiesLight* _tmp7_;
 	soybodiesLight* light;
-	soyatomsPosition* _tmp6_;
-	soyatomsPosition* _tmp7_;
-	soybodiesCamera* _tmp8_;
-	soybodiesCamera* _tmp9_;
+	soyatomsPosition* _tmp8_;
+	soyatomsPosition* _tmp9_;
+	soybodiesCamera* _tmp10_;
+	soybodiesCamera* _tmp11_;
 	soybodiesCamera* cam;
 	g_return_if_fail (self != NULL);
 	_tmp0_ = soy_widgets_window_new (NULL);
@@ -1133,37 +1148,40 @@ void soy_net_client_create_window (soynetClient* self) {
 	self->scene = (soyscenesScene*) _tmp1_;
 	_tmp2_ = soy_atoms_position_new ((gfloat) (-2), (gfloat) 3, (gfloat) (-5));
 	_tmp3_ = _tmp2_;
-	_tmp4_ = soy_bodies_light_new (_tmp3_);
+	_tmp4_ = soy_textures_texture_new ();
 	_tmp5_ = _tmp4_;
-	_g_object_unref0 (_tmp3_);
-	light = _tmp5_;
-	_tmp6_ = soy_atoms_position_new ((gfloat) 0, (gfloat) 0, (gfloat) 20);
+	_tmp6_ = soy_bodies_light_new (_tmp3_, 0.0f, _tmp5_);
 	_tmp7_ = _tmp6_;
-	_tmp8_ = soy_bodies_camera_new (_tmp7_);
+	_g_object_unref0 (_tmp5_);
+	_g_object_unref0 (_tmp3_);
+	light = _tmp7_;
+	_tmp8_ = soy_atoms_position_new ((gfloat) 0, (gfloat) 0, (gfloat) 20);
 	_tmp9_ = _tmp8_;
-	_g_object_unref0 (_tmp7_);
-	cam = _tmp9_;
+	_tmp10_ = soy_bodies_camera_new (_tmp9_);
+	_tmp11_ = _tmp10_;
+	_g_object_unref0 (_tmp9_);
+	cam = _tmp11_;
 	{
 		gint i;
 		i = 0;
 		{
-			gboolean _tmp10_;
-			_tmp10_ = TRUE;
+			gboolean _tmp12_;
+			_tmp12_ = TRUE;
 			while (TRUE) {
-				gboolean _tmp11_;
-				gint _tmp13_;
-				_tmp11_ = _tmp10_;
-				if (!_tmp11_) {
-					gint _tmp12_;
-					_tmp12_ = i;
-					i = _tmp12_ + 1;
+				gboolean _tmp13_;
+				gint _tmp15_;
+				_tmp13_ = _tmp12_;
+				if (!_tmp13_) {
+					gint _tmp14_;
+					_tmp14_ = i;
+					i = _tmp14_ + 1;
 				}
-				_tmp10_ = FALSE;
+				_tmp12_ = FALSE;
 				if (!(i <= 10)) {
 					break;
 				}
-				_tmp13_ = i;
-				soy_net_client_cube (self, _tmp13_);
+				_tmp15_ = i;
+				soy_net_client_cube (self, _tmp15_);
 			}
 		}
 	}

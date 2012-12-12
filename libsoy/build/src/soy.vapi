@@ -35,20 +35,16 @@ namespace soy {
 				public void set_color_uint (global::string key, uint v);
 			}
 			public Color (uchar red, uchar green, uchar blue, uchar alpha = 255);
-			public Color.add (soy.atoms.Color a, soy.atoms.Color b);
 			public static bool cmp (GLib.Object left, GLib.Object right, soy.Comparison comparison);
-			public static bool cmp_eq (GLib.Object left, GLib.Object right);
-			public static bool cmp_ne (GLib.Object left, GLib.Object right);
-			public Color.divide (soy.atoms.Color a, soy.atoms.Color b);
 			public float[] get4f ();
 			public uchar[] get4ub ();
 			public Color.load (global::string packet);
-			public Color.multiply (soy.atoms.Color a, soy.atoms.Color b);
 			public Color.named (global::string color);
 			public Color.new4f (float[] rgba);
 			public Color.new4ub (uchar[] rgba);
+			public Color.operate (soy.atoms.Color left, soy.atoms.Color? right_color, float right_float = 0.0f, soy.MathOperator operator);
+			public void set4f (float[] rgba);
 			public global::string string ();
-			public Color.subtract (soy.atoms.Color a, soy.atoms.Color b);
 			public uchar alpha { get; set; }
 			public uchar blue { get; set; }
 			public uchar green { get; set; }
@@ -109,6 +105,7 @@ namespace soy {
 		[CCode (cheader_filename = "soy.h")]
 		public class Size : GLib.Object {
 			public Size (float width = 0.0f, float height = 0.0f, float depth = 0.0f);
+			public static bool cmp (GLib.Object left, GLib.Object right, soy.Comparison comparison);
 			public new void @set (float width = 0.0f, float height = 0.0f, float depth = 0.0f);
 			public float depth { get; set; }
 			public float height { get; set; }
@@ -139,6 +136,13 @@ namespace soy {
 		}
 	}
 	namespace bodies {
+		[CCode (cheader_filename = "soy.h")]
+		public class Billboard : soy.bodies.Body {
+			public Billboard (soy.atoms.Position? position, soy.atoms.Size? size, soy.materials.Material? material);
+			public override void render ();
+			public soy.materials.Material material { get; set; }
+			public soy.atoms.Size size { owned get; set; }
+		}
 		[CCode (cheader_filename = "soy.h")]
 		public class Body : GLib.Object {
 			public ode.Body? body;
@@ -194,7 +198,7 @@ namespace soy {
 		[CCode (cheader_filename = "soy.h")]
 		public class Light : soy.bodies.Body {
 			public GL.GLuint VERTICES;
-			public Light (soy.atoms.Position? position);
+			public Light (soy.atoms.Position? position, float size, soy.textures.Texture? texture);
 			public override void add_extra ();
 			public void off (GL.GLenum id);
 			public void on (GL.GLenum id);
@@ -827,6 +831,7 @@ namespace soy {
 			public void resize (int c, int x, int y);
 			public new void @set (int index, GLib.Object value);
 			public static int squareup (int _v);
+			public static void surface2rgba (uchar* dst, int dst_stride, uchar* src, int src_stride, int n, int m);
 			public void update (GL.GLenum target);
 			public GL.GLfloat[] animate { get; }
 			public float aspect { get; }
@@ -971,12 +976,12 @@ namespace soy {
 	}
 	[CCode (cheader_filename = "soy.h")]
 	public enum Comparison {
-		EQ,
-		NE,
-		GT,
 		LT,
-		GE,
-		LE
+		LE,
+		NE,
+		EQ,
+		GT,
+		GE
 	}
 	[CCode (cheader_filename = "soy.h")]
 	public enum EventType {
@@ -988,6 +993,16 @@ namespace soy {
 		ButtonRelease,
 		Scroll,
 		WiimoteButtonPress
+	}
+	[CCode (cheader_filename = "soy.h")]
+	public enum MathOperator {
+		ADD,
+		SUB,
+		MUL,
+		DIV,
+		MOD,
+		OR,
+		AND
 	}
 	[CCode (cheader_filename = "soy.h")]
 	public enum ScrollDirection {

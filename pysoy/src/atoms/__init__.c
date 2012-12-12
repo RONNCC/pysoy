@@ -98,7 +98,7 @@ PyInit_soy_atoms (void) {
 
     // add additional pydoc strings
     PyModule_AddStringConstant(module, "__credits__", PYSOY_CREDITS);
-    PyModule_AddStringConstant(module, "__version__", PYSOY_VERSION);
+    PyModule_AddStringConstant(module, "__version__", SOY_VERSION);
 
 
     /////////////////////////////////////////////////////////////////////////

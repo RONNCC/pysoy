@@ -66,101 +66,56 @@ class soy.atoms.Color : Object
         else
             self.hex = color
 
+    construct operate (left : soy.atoms.Color, right_color : soy.atoms.Color?,
+                       right_float : float = 0.0f, operator : MathOperator)
+        left_f : array of float = left.get4f()
+        right_f : array of float = {0.0f, 0.0f, 0.0f, 1.0f}
+        rgb : array of float = {0.0f, 0.0f, 0.0f, 1.0f}
 
-    construct divide (a : soy.atoms.Color, b : soy.atoms.Color)
-        _r, _g, _b : uint
+        if right_color is not null
+            right_f = right_color.get4f()
+        else
+            c : float
+            
+            if operator is MathOperator.MUL or operator is MathOperator.DIV
+                c = right_float
+            else
+                c = right_float / 255.0f
 
-        if b._red == 0
-            _r = 255
-        else
-            _r = (uint)roundf((a._red/256.0f) / (b._red/256.0f) * 256)
+            right_f = {c, c, c, 1.0f}
+        
+        for var i = 0 to 2
+            case operator
+                when MathOperator.ADD
+                    rgb[i] = left_f[i] + right_f[i]
+                when MathOperator.SUB
+                    rgb[i] = left_f[i] - right_f[i]
+                when MathOperator.MUL
+                    rgb[i] = left_f[i] * right_f[i]
+                when MathOperator.DIV
+                    if right_f[i] == 0.0f
+                        rgb[i] = 1.0f
+                    else
+                        rgb[i] = left_f[i] / right_f[i]
+                when MathOperator.MOD
+                    if right_color is not null or (right_float <= 1.0f and right_float >= 0.0f)
+                        if right_f[i] == 0.0f
+                            rgb[i] = 1.0f
+                        else
+                            rgb[i] = left_f[i] % right_f[i]
+                    else
+                        rgb[i] = left_f[i]
 
-        if b._green == 0
-            _g = 255
-        else
-           _g = (uint)roundf((a._green/256.0f) / (b._green/256.0f) * 256)
-
-        if b._blue == 0
-            _b = 255
-        else
-            _b = (uint)roundf((a._blue/256.0f) / (b.blue/256.0f) * 256)
-
-        if _r <= 255
-           self._red = (uchar)_r
-        else
-            self._red = 255
-        if _g <= 255
-            self._green = (uchar)_g
-        else
-            self._green = 255
-        if _b <= 255
-            self._blue = (uchar)_b
-        else
-            self._blue = 255
-        self._alpha = 255
-
-
-    construct multiply (a : soy.atoms.Color, b : soy.atoms.Color)
-        _r, _g, _b : uint
-        _r = (uint)roundf((a._red/256.0f) * (b._red/256.0f) * 256)
-        _g = (uint)roundf((a._green/256.0f) * (b._green/256.0f) * 256)
-        _b = (uint)roundf((a._blue/256.0f) * (b.blue/256.0f) * 256)
-
-        if _r <= 255
-           self._red = (uchar)_r
-        else
-            self._red = 255
-        if _g <= 255
-            self._green = (uchar)_g
-        else
-            self._green = 255
-        if _b <= 255
-            self._blue = (uchar)_b
-        else
-            self._blue = 255
-        self._alpha = 255
-
-
-    construct add (a : soy.atoms.Color, b : soy.atoms.Color)
-        _r, _g, _b : uint
-        _r = a._red   + b._red
-        _g = a._green + b._green
-        _b = a._blue  + b._blue
-
-        if _r <= 255
-           self._red = (uchar)_r
-        else
-            self._red = 255
-        if _g <= 255
-            self._green = (uchar)_g
-        else
-            self._green = 255
-        if _b <= 255
-            self._blue = (uchar)_b
-        else
-            self._blue = 255
-        self._alpha = 255
-
-
-    construct subtract (a : soy.atoms.Color, b : soy.atoms.Color)
-        _r, _g, _b : int
-        _r = a._red   - b._red
-        _g = a._green - b._green
-        _b = a._blue  - b._blue
-
-        if _r >= 0
-           self._red = (uchar)_r
-        else
-            self._red = 0
-        if _g >= 0
-            self._green = (uchar)_g
-        else
-            self._green = 0
-        if _b >= 0
-            self._blue = (uchar)_b
-        else
-            self._blue = 0
-        self._alpha = 255
+                when MathOperator.AND
+                    l : uchar = (uchar) roundf(left_f[i] * 255.0f)
+                    r : uchar = (uchar) roundf(right_f[i] * 255.0f)
+                    rgb[i] = (float) (l & r) / 255.0f
+                when MathOperator.OR
+                    l : uchar = (uchar) roundf(left_f[i] * 255.0f)
+                    r : uchar = (uchar) roundf(right_f[i] * 255.0f)
+                    rgb[i] = (float) (l | r) / 255.0f
+        
+        self.set4f(rgb)
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -218,48 +173,39 @@ class soy.atoms.Color : Object
 
     prop hex : string
         owned get
-            return "#%02x%02x%02x%02x".printf(self._red, self._green, self._blue, self._alpha)
+            return "#%02x%02x%02x%02x".printf(self._red, self._green,
+                                              self._blue, self._alpha)
         set
-            if value.length >= 4 && value.length <= 9 && value[0] == '#'
+            r : uint = 0
+            g : uint = 0
+            b : uint = 0
+            a : uint = 255
+            if value[0] == '#'
                 if value.length == 9
                     // 32-bit hex value
-                    (value[1:3]).scanf("%x", out self._red)
-                    (value[3:5]).scanf("%x", out self._green)
-                    (value[5:7]).scanf("%x", out self._blue)
-                    (value[7:9]).scanf("%x", out self._alpha)
-                else if value.length >= 7
+                    value.scanf("#%2x%2x%2x%2x", out r, out g, out b, out a)
+                else if value.length == 7
                     // 24-bit hex value
-                    (value[1:3]).scanf("%x", out self._red)
-                    (value[3:5]).scanf("%x", out self._green)
-                    (value[5:7]).scanf("%x", out self._blue)
-                    self._alpha = 255
-                else if value.length >= 5
+                    value.scanf("#%2x%2x%2x", out r, out g, out b)
+                else if value.length == 5
                     // 16-bit hex value
-                    (value[1:2]).scanf("%x", out self._red)
-                    (value[2:3]).scanf("%x", out self._green)
-                    (value[3:4]).scanf("%x", out self._blue)
-                    (value[4:5]).scanf("%x", out self._alpha)
-                    self._red *= 17
-                    self._green *= 17
-                    self._blue *= 17
-                    self._alpha *= 17
-                else if value.length >= 4
+                    value.scanf("#%1x%1x%1x%1x", out r, out g, out b, out a)
+                    r *= 17
+                    g *= 17
+                    b *= 17
+                    a *= 17
+                else if value.length == 4
                     // 12-bit hex value
-                    (value[1:2]).scanf("%x", out self._red)
-                    (value[2:3]).scanf("%x", out self._green)
-                    (value[3:4]).scanf("%x", out self._blue)
-                    self._red *= 17
-                    self._green *= 17
-                    self._blue *= 17
-                    self._alpha = 255
-            else
-                // default to black
-                self._red = 0
-                self._green = 0
-                self._blue = 0
-                self._alpha = 255
+                    value.scanf("#%1x%1x%1x", out r, out g, out b)
+                    r *= 17
+                    g *= 17
+                    b *= 17
 
-
+            // Store calculated values
+            self._red = (uchar) r
+            self._green = (uchar) g
+            self._blue = (uchar) b
+            self._alpha = (uchar) a
 
 
     def string () : string
@@ -274,40 +220,62 @@ class soy.atoms.Color : Object
                 ((float) self._blue) / 255.0f,
                 ((float) self._alpha) / 255.0f}
 
+    def set4f (rgba : array of float)
+        if rgba[0] > 1.0f
+            self._red = 255
+        else if rgba[0] < 0.0f
+            self._red = 0
+        else
+            self._red = (uchar) (rgba[0] * 255.0f)
+        
+        if rgba[1] > 1.0f
+            self._green = 255
+        else if rgba[1] < 0.0f
+            self._green = 0
+        else
+            self._green = (uchar) (rgba[1] * 255.0f)
+        
+        if rgba[2] > 1.0f
+            self._blue = 255
+        else if rgba[2] < 0.0f
+            self._blue = 0
+        else
+            self._blue = (uchar) (rgba[2] * 255.0f)
+        
+        if rgba[3] > 1.0f
+            self._alpha = 255
+        else if rgba[3] < 0.0f
+            self._alpha = 0
+        else
+            self._alpha = (uchar) (rgba[3] * 255.0f)
+        
 
     def get4ub () : array of uchar
         // For glColor4ub calls
         return {self._red, self._green, self._blue, self._alpha}
 
-
-    def static cmp_eq (left : Object, right : Object) : bool
-        if not (left isa soy.atoms.Color) or not (right isa soy.atoms.Color)
-            return false
-
-        _r, _g, _b, _a : bool
-
-        var lefta = ((soy.atoms.Color)left).get4ub()
-        var righta = ((soy.atoms.Color)right).get4ub()
-
-        _r = lefta[0] == righta[0]
-        _g = lefta[1] == righta[1]
-        _b = lefta[2] == righta[2]
-        _a = lefta[3] == righta[3]
-
-        return (_r & _g & _b & _a)
-
-
-    def static cmp_ne (left : Object, right : Object) : bool
-        return not cmp_eq(left, right)
-
     def static cmp (left : Object, right : Object, comparison : Comparison) : bool
         if not (left isa soy.atoms.Color) or not (right isa soy.atoms.Color)
             return false
 
-        if (comparison == Comparison.EQ)
-            return cmp_eq(left, right)
-        else if (comparison == Comparison.NE)
-            return cmp_ne(left, right)
+        if (comparison == Comparison.EQ || comparison == Comparison.NE)
+            _r, _g, _b, _a, is_equal : bool
+
+            var lefta = ((soy.atoms.Color)left).get4ub()
+            var righta = ((soy.atoms.Color)right).get4ub()
+
+            _r = lefta[0] == righta[0]
+            _g = lefta[1] == righta[1]
+            _b = lefta[2] == righta[2]
+            _a = lefta[3] == righta[3]
+            
+            is_equal = _r && _g && _b && _a
+            
+            if (comparison == Comparison.EQ)
+                return is_equal
+            else
+                return !is_equal
+            
         else  // compute luminosities
         
             var lefta = (soy.atoms.Color) left

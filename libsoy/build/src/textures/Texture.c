@@ -145,6 +145,7 @@ guchar soy_atoms_color_get_red (soyatomsColor* self);
 guchar soy_atoms_color_get_green (soyatomsColor* self);
 guchar soy_atoms_color_get_blue (soyatomsColor* self);
 gint soy_textures_texture_squareup (gint _v);
+void soy_textures_texture_surface2rgba (guchar* dst, gint dst_stride, guchar* src, gint src_stride, gint n, gint m);
 void soy_textures_texture_update (soytexturesTexture* self, GLenum target);
 void soy_textures_texture_enable (soytexturesTexture* self);
 static void soy_textures_texture_real_enable (soytexturesTexture* self);
@@ -784,15 +785,15 @@ static void _soy_textures_texture_copySurface (soytexturesTexture* self, cairo_s
 	gint _tmp14_;
 	gint _tmp15_ = 0;
 	gint _tmp16_;
-	gint _tmp60_;
-	gint _tmp61_;
-	gint _tmp62_;
-	GLsizei _tmp63_;
-	gint _tmp64_;
-	GLsizei _tmp65_;
-	gboolean _tmp66_ = FALSE;
-	GLfloat _tmp67_;
-	gboolean _tmp69_;
+	gint _tmp52_;
+	gint _tmp53_;
+	gint _tmp54_;
+	GLsizei _tmp55_;
+	gint _tmp56_;
+	GLsizei _tmp57_;
+	gboolean _tmp58_ = FALSE;
+	GLfloat _tmp59_;
+	gboolean _tmp61_;
 	g_return_if_fail (self != NULL);
 	g_return_if_fail (surface != NULL);
 	_tmp0_ = surface;
@@ -922,68 +923,37 @@ static void _soy_textures_texture_copySurface (soytexturesTexture* self, cairo_s
 			}
 		}
 	} else {
-		{
-			gint y;
-			y = 0;
-			{
-				gboolean _tmp47_;
-				_tmp47_ = TRUE;
-				while (TRUE) {
-					gboolean _tmp48_;
-					gint _tmp50_;
-					guchar* _tmp51_;
-					gint _tmp52_;
-					GLsizei _tmp53_;
-					gint _tmp54_;
-					guchar* _tmp55_;
-					gint _tmp56_;
-					gint _tmp57_;
-					gint _tmp58_;
-					gint _tmp59_;
-					_tmp48_ = _tmp47_;
-					if (!_tmp48_) {
-						gint _tmp49_;
-						_tmp49_ = y;
-						y = _tmp49_ + 1;
-					}
-					_tmp47_ = FALSE;
-					_tmp50_ = height;
-					if (!(y <= (_tmp50_ - 1))) {
-						break;
-					}
-					_tmp51_ = self->texels;
-					_tmp52_ = self->priv->_chans;
-					_tmp53_ = self->priv->_width;
-					_tmp54_ = y;
-					_tmp55_ = data;
-					_tmp56_ = stride;
-					_tmp57_ = y;
-					_tmp58_ = width;
-					_tmp59_ = self->priv->_chans;
-					memcpy (_tmp51_ + ((_tmp52_ * _tmp53_) * _tmp54_), _tmp55_ + (_tmp56_ * _tmp57_), (gsize) (_tmp58_ * _tmp59_));
-				}
-			}
-		}
+		guchar* _tmp47_;
+		gint _tmp48_;
+		GLsizei _tmp49_;
+		guchar* _tmp50_;
+		gint _tmp51_;
+		_tmp47_ = self->texels;
+		_tmp48_ = self->priv->_chans;
+		_tmp49_ = self->priv->_width;
+		_tmp50_ = data;
+		_tmp51_ = stride;
+		soy_textures_texture_surface2rgba (_tmp47_, _tmp48_ * _tmp49_, _tmp50_, _tmp51_, 0, 0);
 	}
-	_tmp60_ = width;
-	_tmp61_ = height;
-	self->priv->_aspect = ((gfloat) _tmp60_) / ((gfloat) _tmp61_);
-	_tmp62_ = width;
-	_tmp63_ = self->priv->_width;
-	self->priv->_scaleX = (GLfloat) (((gfloat) _tmp62_) / ((gfloat) _tmp63_));
-	_tmp64_ = height;
-	_tmp65_ = self->priv->_height;
-	self->priv->_scaleY = (GLfloat) (((gfloat) _tmp64_) / ((gfloat) _tmp65_));
-	_tmp67_ = self->priv->_scaleX;
-	if (_tmp67_ == ((GLfloat) 1.0f)) {
-		GLfloat _tmp68_;
-		_tmp68_ = self->priv->_scaleY;
-		_tmp66_ = _tmp68_ == ((GLfloat) 1.0f);
+	_tmp52_ = width;
+	_tmp53_ = height;
+	self->priv->_aspect = ((gfloat) _tmp52_) / ((gfloat) _tmp53_);
+	_tmp54_ = width;
+	_tmp55_ = self->priv->_width;
+	self->priv->_scaleX = (GLfloat) (((gfloat) _tmp54_) / ((gfloat) _tmp55_));
+	_tmp56_ = height;
+	_tmp57_ = self->priv->_height;
+	self->priv->_scaleY = (GLfloat) (((gfloat) _tmp56_) / ((gfloat) _tmp57_));
+	_tmp59_ = self->priv->_scaleX;
+	if (_tmp59_ == ((GLfloat) 1.0f)) {
+		GLfloat _tmp60_;
+		_tmp60_ = self->priv->_scaleY;
+		_tmp58_ = _tmp60_ == ((GLfloat) 1.0f);
 	} else {
-		_tmp66_ = FALSE;
+		_tmp58_ = FALSE;
 	}
-	_tmp69_ = _tmp66_;
-	if (_tmp69_) {
+	_tmp61_ = _tmp58_;
+	if (_tmp61_) {
 		self->priv->_scaleX = (GLfloat) 0.0f;
 	}
 }
@@ -1556,43 +1526,6 @@ void soy_textures_texture_resize (soytexturesTexture* self, gint c, gint x, gint
 }
 
 
-gint soy_textures_texture_squareup (gint _v) {
-	gint result = 0;
-	gint _tmp0_;
-	gint _tmp1_;
-	gint _tmp2_;
-	gint _tmp3_;
-	gint _tmp4_;
-	gint _tmp5_;
-	gint _tmp6_;
-	gint _tmp7_;
-	gint _tmp8_;
-	gint _tmp9_;
-	gint _tmp10_;
-	gint _tmp11_;
-	_tmp0_ = _v;
-	_v = _tmp0_ - 1;
-	_tmp1_ = _v;
-	_tmp2_ = _v;
-	_v = _tmp1_ | (_tmp2_ >> 1);
-	_tmp3_ = _v;
-	_tmp4_ = _v;
-	_v = _tmp3_ | (_tmp4_ >> 2);
-	_tmp5_ = _v;
-	_tmp6_ = _v;
-	_v = _tmp5_ | (_tmp6_ >> 4);
-	_tmp7_ = _v;
-	_tmp8_ = _v;
-	_v = _tmp7_ | (_tmp8_ >> 8);
-	_tmp9_ = _v;
-	_tmp10_ = _v;
-	_v = _tmp9_ | (_tmp10_ >> 16);
-	_tmp11_ = _v;
-	result = _tmp11_ + 1;
-	return result;
-}
-
-
 inline void soy_textures_texture_update (soytexturesTexture* self, GLenum target) {
 	GLenum _tmp0_;
 	GLenum* _tmp1_;
@@ -1857,6 +1790,43 @@ void soy_textures_texture_load (soytexturesTexture* self, void* _vdata, gint _si
 	_data_length1 = _tmp1__length1;
 	__data_size_ = _data_length1;
 	_data = (g_free (_data), NULL);
+}
+
+
+gint soy_textures_texture_squareup (gint _v) {
+	gint result = 0;
+	gint _tmp0_;
+	gint _tmp1_;
+	gint _tmp2_;
+	gint _tmp3_;
+	gint _tmp4_;
+	gint _tmp5_;
+	gint _tmp6_;
+	gint _tmp7_;
+	gint _tmp8_;
+	gint _tmp9_;
+	gint _tmp10_;
+	gint _tmp11_;
+	_tmp0_ = _v;
+	_v = _tmp0_ - 1;
+	_tmp1_ = _v;
+	_tmp2_ = _v;
+	_v = _tmp1_ | (_tmp2_ >> 1);
+	_tmp3_ = _v;
+	_tmp4_ = _v;
+	_v = _tmp3_ | (_tmp4_ >> 2);
+	_tmp5_ = _v;
+	_tmp6_ = _v;
+	_v = _tmp5_ | (_tmp6_ >> 4);
+	_tmp7_ = _v;
+	_tmp8_ = _v;
+	_v = _tmp7_ | (_tmp8_ >> 8);
+	_tmp9_ = _v;
+	_tmp10_ = _v;
+	_v = _tmp9_ | (_tmp10_ >> 16);
+	_tmp11_ = _v;
+	result = _tmp11_ + 1;
+	return result;
 }
 
 

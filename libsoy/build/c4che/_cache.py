@@ -1,5 +1,9 @@
 AR = '/usr/bin/ar'
 ARFLAGS = 'rcs'
+AS = '/usr/bin/gcc'
+ASLNK_TGT_F = ['-o']
+ASMPATH_ST = '-I%s'
+AS_TGT_F = ['-c', '-o']
 BINDIR = '/usr/local/bin'
 CC = ['/usr/bin/gcc']
 CCLNK_SRC_F = []
@@ -21,7 +25,16 @@ CXXFLAGS_RSVG = ['-pthread']
 DATADIR = '/usr/local/share'
 DATAROOTDIR = '/usr/local/share'
 DEFINES = []
-DEFINES_ODE = ['dDOUBLE']
+DEFINES_BLUEZ = ['HAVE_BLUEZ=1']
+DEFINES_DBUS-GLIB = ['HAVE_DBUS_GLIB=1']
+DEFINES_GEE = ['HAVE_GEE=1']
+DEFINES_GL = ['HAVE_GL=1']
+DEFINES_GOBJECT = ['HAVE_GOBJECT=1']
+DEFINES_GTHREAD = ['HAVE_GTHREAD=1']
+DEFINES_LM = ['HAVE_LM=1']
+DEFINES_NICE = ['HAVE_NICE=1']
+DEFINES_ODE = ['HAVE_ODE=1', 'dDOUBLE']
+DEFINES_RSVG = ['HAVE_RSVG=1']
 DEFINES_ST = '-D%s'
 DEST_BINFMT = 'elf'
 DEST_CPU = 'x86'

@@ -43,13 +43,10 @@ class soy.joints.Fixed: soy.joints.Joint
     def override create ( )
         joint = new ode.joints.Fixed(scene.world, null)
 
+
     def override setup (anchor : soy.atoms.Position?, axis1 : soy.atoms.Axis?,
                         axis2 : soy.atoms.Axis?)
         ((ode.joints.Fixed) joint).Set()
-
-
-
-
 
 
     def override render ( )
@@ -109,17 +106,17 @@ class soy.joints.Fixed: soy.joints.Joint
         posB : soy.atoms.Position = bodyB.position
 
         // constants to help drawing
-        radius : GLfloat = (GLfloat) 0.025
+        r : GLfloat = 0.0625f   // radius
 
-        // distance in (x, y) plane is width
-        width : GLfloat = sqrtf((posB.x - posA.x) * (posB.x - posA.x) +
-                                (posB.y - posA.y) * (posB.y - posA.y)) / 2
+        // distance in (x, y) plane is xl
+        xl : GLfloat = sqrtf((posB.x - posA.x) * (posB.x - posA.x) +
+                             (posB.y - posA.y) * (posB.y - posA.y))
 
         // distance in (y, z) plane is height
-        height : GLfloat = (GLfloat) 0.150 - radius
+        height : GLfloat = 0.250f - r
 
         // distance in (x, z) plane is depth
-        depth : GLfloat = (GLfloat) 0.150 - radius
+        depth : GLfloat = 0.250f - r
 
         // index array of vertex array
         elements : array of GLubyte = {
@@ -136,53 +133,209 @@ class soy.joints.Fixed: soy.joints.Joint
         // interleaved (vertex, normals, texcoords, tangents) array
         // (px py pz nx ny nz tx ty ux uy uz) for each vertex
         vertices : array of GLfloat = {
-             width, height, depth,   0, 0, 1,    1, 1,    0, 1, 0, // front
-            -width, height, depth,   0, 0, 1,    0, 1,    0, 1, 0,
-            0     , 0     , depth,   0, 0, 1,    (GLfloat) 0.5, (GLfloat) 0.5,    0, 1, 0
-            -width,-height, depth,   0, 0, 1,    0, 0,    0, 1, 0,
-             width,-height, depth,   0, 0, 1,    1, 0,    0, 1, 0,
+            // front
+              xl,  height,  depth,
+               0,       0,      1,
+               1,       1,
+               0,       1,      0,
 
-             width, height, depth,   0, 1, 0,    1, 0,    0, 0,-1, // top
-             width, height,-depth,   0, 1, 0,    1, 1,    0, 0,-1,
-             0,     height, 0    ,   0, 1, 0,    (GLfloat) 0.5, (GLfloat) 0.5,    0, 0,-1,
-            -width, height,-depth,   0, 1, 0,    0, 1,    0, 0,-1,
-            -width, height, depth,   0, 1, 0,    0, 0,    0, 0,-1,
+               0,  height,  depth,
+               0,       0,      1,
+               0,       1,
+               0,       1,      0,
 
-            -width,-height,-depth,   0,-1, 0,    0, 1,    0, 0, 1,// bottom
-             width,-height,-depth,   0,-1, 0,    1, 1,    0, 0, 1,
-             0    ,-height, 0    ,   0,-1, 0,    (GLfloat) 0.5, (GLfloat) 0.5,    0, 0, 1,
-             width,-height, depth,   0,-1, 0,    1, 0,    0, 0, 1,
-            -width,-height, depth,   0,-1, 0,    0, 0,    0, 0, 1,
+            xl/2,       0,  depth,
+               0,       0,      1,
+            0.5f,    0.5f,
+               0,       1,      0,
 
-             width,-height,-depth,   0, 0,-1,    1, 0,    0,-1, 0, // back
-            -width,-height,-depth,   0, 0,-1,    0, 0,    0,-1, 0,
-            0     , 0     ,-depth,   0, 0,-1,    (GLfloat) 0.5, (GLfloat) 0.5,    0,-1,0,
-            -width, height,-depth,   0, 0,-1,    0, 1,    0,-1, 0,
-             width, height,-depth,   0, 0,-1,    1, 1,    0,-1, 0,
+               0, -height,  depth,
+               0,       0,      1,
+               0,       0,
+               0,       1,      0,
 
-             -width, height, depth,  0, 0, 1,    0, 0,    0, 1, 0,
-             -width, (GLfloat) (height + radius * sin(11.25)), (GLfloat) (depth + radius*cos(11.25)), 0, (GLfloat) (sin(11.25)), (GLfloat) (cos(11.25)), 0, 0,    0, (GLfloat) sin(-78.75), (GLfloat) cos(-78.75),
-             -width, (GLfloat) (height + radius * sin(22.5)),(GLfloat) (depth + radius*cos(22.5)), 0, (GLfloat) (sin(22.5)), (GLfloat) (cos(22.5)),      0, 0,    0, (GLfloat) sin(-67.5), (GLfloat) cos(-67.5),
-             -width, (GLfloat) (height + radius * sin(33.75)), (GLfloat) (depth + radius*cos(33.75)), 0, (GLfloat) (sin(33.75)), (GLfloat) (cos(33.75)), 0, 0,    0, (GLfloat) sin(-56.25), (GLfloat) cos(-56.25),
-             -width, (GLfloat) (height + radius * sin(45)), (GLfloat) (depth + radius*cos(45)), 0, (GLfloat) (sin(45)), (GLfloat) (cos(45)),             0, 0,    0, (GLfloat) sin(-45), (GLfloat) cos(-45),
+              xl, -height,  depth,
+               0,       0,      1,
+               1,       0,
+               0,       1,      0,
 
-             -width,-height, depth,  0, 0, 1,    0, 0,    0, 1, 0
-             -width,(GLfloat) (-height + radius * sin(11.25)), (GLfloat) (depth + radius*cos(11.25)), 0, (GLfloat) (sin(11.25)), (GLfloat) (cos(11.25)),0, 0,    0, (GLfloat) sin(-78.75), (GLfloat) cos(-78.75),
-             -width,(GLfloat) (-height + radius * sin(22.5)), (GLfloat) (depth + radius*cos(22.5)), 0, (GLfloat) (sin(22.5)), (GLfloat) (cos(22.5)),    0, 0,    0, (GLfloat) sin(-67.5), (GLfloat) cos(-67.5),
-             -width,(GLfloat) (-height + radius * sin(33.75)), (GLfloat) (depth + radius*cos(33.75)), 0, (GLfloat) (sin(33.75)), (GLfloat) (cos(33.75)),0, 0,    0, (GLfloat) sin(-56.25), (GLfloat) cos(-56.25),
-             -width,(GLfloat) (-height + radius * sin(45)), (GLfloat) (depth + radius*cos(45)), 0, (GLfloat) (sin(45)), (GLfloat) (cos(45)),            0, (GLfloat) 0.75,    0, (GLfloat) sin(-45), (GLfloat) cos(-45),
+            // top
+              xl,  height,  depth,
+               0,       1,      0,
+               1,       0,
+               0,       0,     -1,
 
-              width, height, depth,  0, 0, 1,    0, 0,    0, 1, 0,
-              width, (GLfloat) (height + radius * sin(11.25)), (GLfloat) (depth + radius*cos(11.25)), 0, (GLfloat) (sin(11.25)), (GLfloat) (cos(11.25)),0, 0,    0, (GLfloat) sin(-78.75), (GLfloat) cos(-78.75),
-              width, (GLfloat) (height + radius * sin(22.5)), (GLfloat) (depth + radius*cos(22.5)), 0, (GLfloat) (sin(22.5)), (GLfloat) (cos(22.5)),    0, 0,    0, (GLfloat) sin(-67.5), (GLfloat) cos(-67.5),
-              width, (GLfloat) (height + radius * sin(33.75)), (GLfloat) (depth + radius*cos(33.75)), 0, (GLfloat) (sin(33.75)), (GLfloat) (cos(33.75)),0, 0,    0, (GLfloat) sin(-56.25), (GLfloat) cos(-56.25),
-              width, (GLfloat) (height + radius * sin(45)), (GLfloat) (depth + radius*cos(45)), 0, (GLfloat) (sin(45)), (GLfloat) (cos(45)), 0, (GLfloat) 0.25,    0, (GLfloat) sin(-45), (GLfloat) cos(-45),
+              xl,  height, -depth,
+               0,       1,      0,
+               1,       1,
+               0,       0,     -1,
 
-              width,-height, depth,  0, 0, 1,    0, 0,    0, 1, 0,
-              width,(GLfloat) (-height + radius * sin(11.25)), (GLfloat) (depth + radius*cos(11.25)), 0, (GLfloat) (sin(11.25)), (GLfloat) (cos(11.25)),0, 0,    0, (GLfloat) sin(-78.75), (GLfloat) cos(-78.75),
-              width,(GLfloat) (-height + radius * sin(22.5)), (GLfloat) (depth + radius*cos(22.5)), 0, (GLfloat) (sin(22.5)), (GLfloat) (cos(22.5)),    0, 0,    0, (GLfloat) sin(-67.5), (GLfloat) cos(-67.5),
-              width,(GLfloat) (-height + radius * sin(33.75)), (GLfloat) (depth + radius*cos(33.75)), 0, (GLfloat) (sin(33.75)), (GLfloat) (cos(33.75)),0, 0,    0, (GLfloat) sin(-56.25), (GLfloat) cos(-56.25),
-              width,(GLfloat) (-height + radius * sin(45)), (GLfloat) (depth + radius*cos(45)), 0, (GLfloat) (sin(45)), (GLfloat) (cos(45)),            0, (GLfloat) 0.5,    0, (GLfloat) sin(-45), (GLfloat) cos(-45)
+            xl/2,  height,      0,
+               0,       1,      0,
+            0.5f,    0.5f,
+               0,       0,     -1,
+
+               0,  height, -depth,
+               0,       1,      0,
+               0,       1,
+               0,       0,     -1,
+
+               0,  height,  depth,
+               0,       1,      0,
+               0,       0,
+               0,       0,     -1,
+
+            // bottom
+               0, -height, -depth,
+               0,      -1,      0,
+               0,       1,
+               0,       0,      1,
+
+              xl, -height, -depth,
+               0,      -1,      0,
+               1,       1,
+               0,       0,      1,
+
+            xl/2, -height,      0,
+               0,      -1,      0,
+            0.5f,    0.5f,
+               0,       0,      1,
+
+              xl, -height,  depth,
+               0,      -1,      0,
+               1,       0,
+               0,       0,      1,
+
+               0, -height,  depth,
+               0,      -1,      0,
+               0,       0,
+               0,       0,      1,
+
+            // back
+              xl, -height, -depth,
+               0,       0,     -1,
+               1,       0,
+               0,      -1,      0,
+
+               0, -height, -depth,
+               0,       0,     -1,
+               0,       0,
+               0,      -1,      0,
+
+            xl/2,       0, -depth,
+               0,       0,     -1,
+            0.5f,    0.5f,
+               0,      -1,      0,
+
+               0,  height, -depth,
+               0,       0,     -1,
+               0,       1,
+               0,      -1,      0,
+
+              xl,  height, -depth,
+               0,       0,     -1,
+               1,       1,
+               0,      -1,      0,
+
+               0,  height,  depth,
+               0,       0,      1,
+               0,       0,
+               0,       1,      0,
+
+               0,  height + r * sinf( 11.25f),  depth + r * cosf( 11.25f),
+               0,               sinf( 11.25f),              cosf( 11.25f),
+               0,                           0,
+               0,               sinf(-78.75f),              cosf(-78.75f),
+
+               0,  height + r * sinf( 22.50f),  depth + r * cosf( 22.50f),
+               0,               sinf( 22.50f),              cosf( 22.50f),
+               0,                           0,
+               0,               sinf(-67.50f),              cosf(-67.50f),
+
+               0,  height + r * sinf( 33.75f),  depth + r * cosf( 33.75f),
+               0,               sinf( 33.75f),              cosf( 33.75f),
+               0,                           0,
+               0,               sinf(-56.25f),              cosf(-56.25f),
+
+               0,  height + r * sinf( 45.00f),  depth + r * cosf( 45.00f),
+               0,               sinf( 45.00f),              cosf( 45.00f),
+               0,                           0,
+               0,               sinf(-45.00f),              cosf(-45.00f),
+
+               0,                     -height,                      depth,
+               0,                           0,                          1,
+               0,                           0,
+               0,                           1,                          0,
+
+               0, -height + r * sinf( 11.25f),  depth + r * cosf( 11.25f),
+               0,               sinf( 11.25f),              cosf( 11.25f),
+               0,                           0,
+               0,               sinf(-78.75f),              cosf(-78.75f),
+
+               0, -height + r * sinf( 22.50f),  depth + r * cosf( 22.50f),
+               0,               sinf( 22.50f),              cosf( 22.50f),
+               0,                           0,
+               0,               sinf(-67.50f),              cosf(-67.50f),
+
+               0, -height + r * sinf( 33.75f),  depth + r * cosf( 33.75f),
+               0,               sinf( 33.75f),              cosf( 33.75f),
+               0,                           0,
+               0,               sinf(-56.25f),              cosf(-56.25f),
+
+               0, -height + r * sinf( 45.00f),  depth + r * cosf( 45.00f),
+               0,               sinf( 45.00f),              cosf( 45.00f),
+               0,                       0.75f,
+               0,               sinf(-45.00f),              cosf(-45.00f),
+
+              xl,                      height,                      depth,
+               0,                           0,                          1,
+               0,                           0,
+               0,                           1,                          0,
+
+              xl,  height + r * sinf( 11.25f),  depth + r * cosf( 11.25f),
+               0,               sinf( 11.25f),              cosf( 11.25f),
+               0,                           0,
+               0,               sinf(-78.75f),              cosf(-78.75f),
+
+              xl,  height + r * sinf( 22.50f),  depth + r * cosf( 22.50f),
+               0,               sinf( 22.50f),              cosf( 22.50f),
+               0,                           0,
+               0,               sinf(-67.50f),              cosf(-67.50f),
+
+              xl,  height + r * sinf( 33.75f),  depth + r * cosf( 33.75f),
+               0,               sinf( 33.75f),              cosf( 33.75f),
+               0,                           0,
+               0,               sinf(-56.25f),              cosf(-56.25f),
+
+              xl,  height + r * sinf( 45.00f),  depth + r * cosf( 45.00f),
+               0,               sinf( 45.00f),              cosf( 45.00f),
+               0,                       0.25f,
+               0,               sinf(-45.00f),              cosf(-45.00f),
+
+              xl,                     -height,                      depth,
+               0,                           0,                          1,
+               0,                           0,
+               0,                           1,                          0,
+
+              xl, -height + r * sinf( 11.25f),  depth + r * cosf( 11.25f),
+               0,               sinf( 11.25f),              cosf( 11.25f),
+               0,                           0,
+               0,               sinf(-78.75f),              cosf(-78.75f),
+
+              xl, -height + r * sinf( 22.50f),  depth + r * cosf( 22.50f),
+               0,               sinf( 22.50f),              cosf( 22.50f),
+               0,                           0,
+               0,               sinf(-67.50f),              cosf(-67.50f),
+
+              xl, -height + r * sinf( 33.75f),  depth + r * cosf( 33.75f),
+               0,               sinf( 33.75f),              cosf( 33.75f),
+               0,                           0,
+               0,               sinf(-56.25f),              cosf(-56.25f),
+
+              xl, -height + r * sinf( 45.00f),  depth + r * cosf( 45.00f),
+               0,               sinf( 45.00f),              cosf( 45.00f),
+               0,                       0.50f,
+               0,               sinf(-45.00f),              cosf(-45.00f)
         }
 
         // bind elements

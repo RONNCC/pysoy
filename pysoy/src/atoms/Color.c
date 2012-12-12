@@ -129,7 +129,6 @@ tp_str (PyObject* this) {
     return ret;
 }
 
-
 static PyObject*
 tp_richcompare (PyObject *left, PyObject *right, int op) {
     GObject* c1 = NULL;
@@ -141,20 +140,35 @@ tp_richcompare (PyObject *left, PyObject *right, int op) {
     c1 = ((PySoy__G_Object*) left)->g;
     c2 = ((PySoy__G_Object*) right)->g;
 
-    if (op == Py_EQ) {
-        if (soy_atoms_color_cmp_eq(c1, c2))
-            return Py_True;
+    soyComparison comparison;
+
+    switch (op) {
+		case Py_EQ:
+		    comparison = SOY_COMPARISON_EQ;
+		    break;
+        case Py_NE:
+		    comparison = SOY_COMPARISON_NE;
+		    break;
+		case Py_LT:
+		    comparison = SOY_COMPARISON_LT;
+		    break;
+		case Py_LE:
+		    comparison = SOY_COMPARISON_LE;
+		    break;
+		case Py_GT:
+		    comparison = SOY_COMPARISON_GT;
+		    break;
+		case Py_GE:
+		    comparison = SOY_COMPARISON_GE;
+		    break;
+		default:
+		    break;
     }
-    else if (op == Py_NE) {
-        if (soy_atoms_color_cmp_ne(c1, c2))
-            return Py_True;
-    }
-    else {
-        if (soy_atoms_color_cmp(c1, c2, op))
-            return Py_True;
-    }
+
+    if (soy_atoms_color_cmp(c1, c2, comparison))
+        Py_RETURN_TRUE;
     
-    return Py_False;
+    Py_RETURN_FALSE;
 }
 
 

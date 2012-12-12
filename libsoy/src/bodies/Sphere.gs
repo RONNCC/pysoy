@@ -130,19 +130,64 @@ class soy.bodies.Sphere : soy.bodies.Body
 
     // TODO: textures, use VBO instead vertex array and buffer it better
     def _sphere(radius : GLfloat, slices : GLint, stacks : GLint)
+        ///////////////////////////////////////////////////////////////////////
+        //
+        // (example with CACHE_SIZE = 5)
+        //
+        //  Front View:
+        //
+        //             ,O,
+        //           ,'/| ',
+        //         ,' / |   ',
+        //       ,'  / ,O--,  ',
+        //     ,'   /,' | ','--,',
+        //   ,'    /'   |   ',  '--,
+        //  O-----O-----O-----O-----O
+        //   '--,  ',   |   ,/    ,'
+        //     ','--,', | ,'/   ,'
+        //       ',  '--O' /  ,'
+        //         ',   | / ,'
+        //           ', |/,'
+        //             'O'
+        //
+        //  Top View:
+        //
+        //          _,,-O-,,_
+        //       ,-'    |    '-,
+        //      O-------O-------O
+        //     /    _,-'|     ,' \
+        //    / _,-'    |  ,-'    \
+        //   ;-'        |,'        \
+        //  O-----------O-----------O
+        //   \        ,'|       _,-;
+        //    \    ,-'  |   _,-'  /
+        //     \ ,'     |,-'     /
+        //      O-------O-------O
+        //       '-,_   |   _,-'
+        //           ''-O-''
+        //
+        // In this case, there are 4 slices, and 4 stacks.
+
         CACHE_SIZE : GLuint = 240
+        // sin,cos of slices
         var sinCache1a = new array of GLfloat[CACHE_SIZE]
         var cosCache1a = new array of GLfloat[CACHE_SIZE]
+        // sin,cos of slices
         var sinCache2a = new array of GLfloat[CACHE_SIZE]
         var cosCache2a = new array of GLfloat[CACHE_SIZE]
+        // unused caches
         var sinCache3a = new array of GLfloat[CACHE_SIZE]
         var cosCache3a = new array of GLfloat[CACHE_SIZE]
+        // sin,cos of stacks multiplied by radius, used for vertices
         var sinCache1b = new array of GLfloat[CACHE_SIZE]
         var cosCache1b = new array of GLfloat[CACHE_SIZE]
+        // sin,cos of stacks
         var sinCache2b = new array of GLfloat[CACHE_SIZE]
         var cosCache2b = new array of GLfloat[CACHE_SIZE]
+        // unused caches
         var sinCache3b = new array of GLfloat[CACHE_SIZE]
         var cosCache3b = new array of GLfloat[CACHE_SIZE]
+        // temporary values
         zLow, zHigh : GLfloat
         var sintemp1 = 0.0f
         var sintemp2 = 0.0f
@@ -153,24 +198,32 @@ class soy.bodies.Sphere : soy.bodies.Body
 
         vertices : array of GLfloat[(CACHE_SIZE+1)*2, 3] = new array of GLfloat[(CACHE_SIZE+1)*2, 3]
         normals : array of GLfloat[(CACHE_SIZE+1)*2, 3] = new array of GLfloat[(CACHE_SIZE+1)*2, 3]
-        //print "slices: %d, stacks: %d, radius: %f", slices,stacks,radius
-        //print "CACHE_SIZE: %d",(GLint)(CACHE_SIZE - 1)
+        /* print "slices: %d, stacks: %d, radius: %f", slices,stacks,radius */
+        /* print "CACHE_SIZE: %d",(GLint)(CACHE_SIZE - 1) */
+
+        // limit the number of slices and stacks to the cache size
         if slices >= CACHE_SIZE
             slices = (GLint)(CACHE_SIZE - 1)
         if stacks >= CACHE_SIZE
             stacks = (GLint)(CACHE_SIZE - 1)
-        //print "slices: %d, stacks: %d, radius: %f", slices,stacks,radius
+        /* print "slices: %d, stacks: %d, radius: %f", slices,stacks,radius */
+
+        // Make sure the sphere is valid (not degenerate, nonnegative radius)
         assert(slices>=2 && stacks>=1 && radius>=0.0)
+
+        // Generate caches
         for var i=0 to (slices-1)
             var angle = 2.0f * PI * i / slices
-            sinCache1a[i] = (GLfloat)sin(angle)
-            cosCache1a[i] = (GLfloat)cos(angle)
+            // sin,cos caches for slice angles (around z-axis)
+            sinCache1a[i] = (GLfloat) sin(angle)
+            cosCache1a[i] = (GLfloat) cos(angle)
 
             sinCache2a[i] = sinCache1a[i]
             cosCache2a[i] = cosCache1a[i]
 
         for var j=0 to (stacks-1)
-            var angle=PI*j/stacks
+            var angle = PI * j / stacks
+            // sin,cos caches for stack angles (around x or y-axis)
             sinCache2b[j] = (GLfloat) sin(angle)
             cosCache2b[j] = (GLfloat) cos(angle)
 
@@ -180,16 +233,18 @@ class soy.bodies.Sphere : soy.bodies.Body
         sinCache1b[0] = 0
         sinCache1b[stacks] = 0
 
+        // unused generated caches
         for var i=0 to (slices-1)
             var angle = 2.0f * PI * (i - 0.5f) / slices
             sinCache3a[i] = (GLfloat) sin(angle)
             cosCache3a[i] = (GLfloat) cos(angle)
 
         for var j=0 to stacks
-            var angle= PI * (j - 0.5f) / stacks
+            var angle = PI * (j - 0.5f) / stacks
             sinCache3b[j] = (GLfloat) sin(angle)
             cosCache3b[j] = (GLfloat) cos(angle)
 
+        // Make the caches start and end at the same value
         sinCache1a[slices] = sinCache1a[0]
         cosCache1a[slices] = cosCache1a[0]
         sinCache2a[slices] = sinCache2a[0]
@@ -205,21 +260,40 @@ class soy.bodies.Sphere : soy.bodies.Body
         glEnableClientState(GL_NORMAL_ARRAY)
         glNormalPointer(GL_FLOAT, 0, normals)
 
+        // indexes for middle stacks
         var start = 1
         var finish = stacks-1
 
-        /* Low end first (j == 0 iteration) */
-        sintemp2 = sinCache1b[1]
-        zHigh = cosCache1b[1]
-        sintemp3 = sinCache2b[1]
-        costemp3 = cosCache2b[1]
-        normals[0,0] = sinCache2a[0]*sinCache2b[0]
-        normals[0,1] = cosCache2a[0]*sinCache2b[0]
-        normals[0,2] = cosCache2b[0]
+        // Draw the front end cap
+        //
+        //  Top View:
+        //
+        //              Center ------,
+        //              .            |
+        //              .            | zHigh
+        //              .            |
+        //      O-------O-------O ---'
+        //       '-,_   |   _,-'
+        //           ''-O-''
+        //
+        //              |-------|
+        //               sintemp2
+        //
+        sintemp2 = sinCache1b[1] // radius of the end cap
+        zHigh = cosCache1b[1] // depth of the end cap
+        sintemp3 = sinCache2b[1] // normalized radius
+        costemp3 = cosCache2b[1] // normalized depth
+
+        // front vertex
+        normals[0,0] = sinCache2a[0] * sinCache2b[0] // 0.0f
+        normals[0,1] = cosCache2a[0] * sinCache2b[0] // 0.0f
+        normals[0,2] = cosCache2b[0] // 1.0f
+
         vertices[0,0] = 0.0f
         vertices[0,1] = 0.0f
         vertices[0,2] = radius
 
+        // generate cap
         for var i=0 to slices
             normals[slices-i+1,0] = sinCache2a[i] * sintemp3
             normals[slices-i+1,1] = cosCache2a[i] * sintemp3
@@ -231,42 +305,82 @@ class soy.bodies.Sphere : soy.bodies.Body
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, (slices+2))
 
-        /* High end next (j == stacks-1 iteration) */
-        sintemp2 = sinCache1b[stacks-1]
-        zHigh = cosCache1b[stacks-1]
-        sintemp3 = sinCache2b[stacks-1]
-        costemp3 = cosCache2b[stacks-1]
-        normals[0,0] = sinCache2a[stacks] * sinCache2b[stacks]
-        normals[0,1] = cosCache2a[stacks] * sinCache2b[stacks]
-        normals[0,2] = cosCache2b[stacks]
+        // Draw the back end cap
+        //
+        //  Top View:
+        //
+        //               sintemp2
+        //              |-------|
+        //
+        //          _,,-O-,,_
+        //       ,-'    |    '-,
+        //      O-------O-------O ----,
+        //              .             |
+        //              .             | zHigh
+        //              .             |
+        //              Center -------'
+        //
+        sintemp2 = sinCache1b[stacks-1] // radius of the end cap
+        zHigh = cosCache1b[stacks-1] // depth of the end cap
+        sintemp3 = sinCache2b[stacks-1] // normalized radius
+        costemp3 = cosCache2b[stacks-1] // normalized depth
 
-        vertices[0,0]=0.0f
-        vertices[0,1]=0.0f
-        vertices[0,2]=-radius
+        // back vertex
+        normals[0,0] = sinCache2a[stacks] * sinCache2b[stacks] // 0.0f
+        normals[0,1] = cosCache2a[stacks] * sinCache2b[stacks] // 0.0f
+        normals[0,2] = cosCache2b[stacks] // 0.0f (uninitialized?)
 
+        vertices[0,0] = 0.0f
+        vertices[0,1] = 0.0f
+        vertices[0,2] = -radius
+
+        // generate cap
         for var i=0 to slices
-            normals[i+1,0]=sinCache2a[i]*sintemp3
-            normals[i+1,1]=cosCache2a[i]*sintemp3
-            normals[i+1,2]=costemp3
+            normals[i+1,0] = sinCache2a[i] * sintemp3
+            normals[i+1,1] = cosCache2a[i] * sintemp3
+            normals[i+1,2] = costemp3
 
-            vertices[i+1,0]=sintemp2*sinCache1a[i]
-            vertices[i+1,1]=sintemp2*cosCache1a[i]
-            vertices[i+1,2]=zHigh
+            vertices[i+1,0] = sintemp2 * sinCache1a[i]
+            vertices[i+1,1] = sintemp2 * cosCache1a[i]
+            vertices[i+1,2] = zHigh
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, (slices+2))
 
+        // Draw the middle stacks
+        //
+        //  Top View (not CACHE_SIZE = 5):
+        //
+        //
+        //              Center ----------, ------,
+        //              .                |       |
+        //              .                | zHigh |
+        //              .                |       |
+        //  O-----------O-----------O ---'       | zLow
+        //   \        ,'|       _,-;             |
+        //    \    ,-'  |   _,-'  /              |
+        //     \ ,'     |,-'     /               |
+        //      O-------O-------O ---------------'
+        //
+        //              |-------|
+        //               sintemp1
+        //
+        //              |-----------|
+        //                sintemp2
+        //
         for var j=start to (finish-1)
-            zLow = cosCache1b[j]
-            zHigh = cosCache1b[j+1]
-            sintemp1 = sinCache1b[j]
-            sintemp2 = sinCache1b[j+1]
+            zLow = cosCache1b[j] // front depth of stack
+            zHigh = cosCache1b[j+1] // back depth of stack
+            sintemp1 = sinCache1b[j] // front radius of stack
+            sintemp2 = sinCache1b[j+1] // back radius of stack
 
-            sintemp3 = sinCache2b[j+1]
-            costemp3 = cosCache2b[j+1]
-            sintemp4 = sinCache2b[j]
-            costemp4 = cosCache2b[j]
+            sintemp3 = sinCache2b[j+1] // normalized back radius
+            costemp3 = cosCache2b[j+1] // normalized back depth
+            sintemp4 = sinCache2b[j] // normalized front radius
+            costemp4 = cosCache2b[j] // normalized front depth
 
+            // normals and vertices for one stack
             for var i=0 to slices
+                // back ring of vertices
                 normals[i*2,0] = sinCache2a[i]*sintemp3
                 normals[i*2,1] = cosCache2a[i]*sintemp3
                 normals[i*2,2] = costemp3
@@ -275,6 +389,7 @@ class soy.bodies.Sphere : soy.bodies.Body
                 vertices[i*2,1] = sintemp2*cosCache1a[i]
                 vertices[i*2,2] = zHigh
 
+                // front ring of vertices
                 normals[i*2+1,0] = sinCache2a[i]*sintemp4
                 normals[i*2+1,1] = cosCache2a[i]*sintemp4
                 normals[i*2+1,2] = costemp4
@@ -282,6 +397,7 @@ class soy.bodies.Sphere : soy.bodies.Body
                 vertices[i*2+1,0] = sintemp1*sinCache1a[i]
                 vertices[i*2+1,1] = sintemp1*cosCache1a[i]
                 vertices[i*2+1,2] = zLow
+
             glDrawArrays(GL_TRIANGLE_STRIP, 0, (slices+1)*2)
 
         // Disable or re-enable arrays
